@@ -1,0 +1,20 @@
+/* Place page specific styles */
+/* Be sure to link this to your app html page! */
+
+.glow-effect {
+    animation: text-glow 2s ease-out forwards;
+}
+
+@keyframes text-glow {
+    0% {
+        text-shadow: 
+            0 0 10px rgba(255, 215, 0, 1),   /* Bright center glow */
+            0 0 20px rgba(255, 215, 0, 0.8), /* Outer glow */
+            0 0 30px rgba(255, 215, 0, 0.6), /* Fainter, further glow */
+            0 0 40px rgba(255, 215, 0, 0.4); /* Distant glow */
+    }
+    100% {
+        text-shadow: 
+            0 0 0 rgba(255, 215, 0, 0); /* Fade back to normal */
+    }
+}
