@@ -43,6 +43,13 @@
             </li>
         </ul>
 
+        <!-- Add Listing Button -->
+        <div class="d-flex justify-content-end mb-3">
+            <button id="addListing" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addListingModal">
+                <i class="fas fa-plus"></i> Add Listing
+            </button>
+        </div>
+
         <!-- Tab content -->
         <div class="tab-content mt-3" id="myTabContent">
             <!-- Main tab content -->
@@ -192,6 +199,69 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button id="modalCreateButton" type="submit" class="btn btn-primary" form="addUserForm">Create Account</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Adding a New Listing -->
+<div class="modal fade" id="addListingModal" tabindex="-1" aria-labelledby="addListingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addListingModalLabel">Add New Listing</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addListingForm">
+                    <!-- Product Name -->
+                    <div class="mb-3">
+                        <label for="productName" class="form-label">Product Name</label>
+                        <input type="text" class="form-control" id="productName" name="product" placeholder="Enter product name" required>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Price</label>
+                        <input type="number" class="form-control" id="price" name="price" placeholder="Enter price" required>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter description" required></textarea>
+                    </div>
+
+                    <!-- Location (Dropdown) -->
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <select class="form-select" id="location" name="location" required>
+                            <option value="" disabled selected>Select a location</option>
+                            <option value="Chandler">Chandler</option>
+                            <option value="Flagstaff">Flagstaff</option>
+                            <option value="Glendale">Glendale</option>
+                            <option value="Peoria">Peoria</option>
+                            <option value="Phoenix">Phoenix</option>
+                            <option value="Scottsdale">Scottsdale</option>
+                            <option value="Tempe">Tempe</option>
+                            <option value="Tucson">Tucson</option>
+                        </select>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div class="mb-3">
+                        <label class="form-label">Photo</label>
+                        <div>
+                            <button type="button" class="btn btn-secondary" id="uploadPhotoButton">
+                                <i class="fas fa-upload"></i> Upload Photo
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="modalAddListingButton" type="submit" class="btn btn-primary" form="addListingForm">Add Listing</button>
             </div>
         </div>
     </div>
