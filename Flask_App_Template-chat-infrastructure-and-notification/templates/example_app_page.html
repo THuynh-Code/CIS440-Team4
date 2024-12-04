@@ -182,6 +182,153 @@
         </div>
     </div>
 
+    <!-- Expanded View Modal -->
+<div class="modal fade" id="expandedViewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-asu-maroon text-white">
+                <h5 class="modal-title" id="expandedModalTitle"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <img id="expandedModalImage" class="img-fluid mb-3" alt="Listing Image">
+                <p id="expandedModalPrice" class="price-text fs-4"></p>
+                <p id="expandedModalDescription"></p>
+                <p id="expandedModalLocation" class="text-muted"><i class="fas fa-map-marker-alt"></i> <span></span></p>
+            </div>
+            <div class="modal-footer justify-content-end">
+                <button class="btn btn-outline-primary">
+                    <i class="fas fa-envelope me-1"></i> Message Seller
+                </button>
+                <button class="btn btn-asu-gold">
+                    <i class="fas fa-shopping-cart me-1"></i> Purchase
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Modal -->
+<div class="modal fade" id="purchaseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-asu-maroon text-white">
+                <h5 class="modal-title">Complete Your Purchase</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="inPersonPickupCheckbox" onchange="toggleShippingInfo()">
+                    <label class="form-check-label" for="inPersonPickupCheckbox">
+                        In-Person Pickup (No Shipping Required)
+                    </label>
+                </div>
+
+                <div class="accordion" id="purchaseAccordion">
+                    <!-- Shipping Information -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingShipping">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseShipping" aria-expanded="true" aria-controls="collapseShipping">
+                                Shipping Information
+                            </button>
+                        </h2>
+                        <div id="collapseShipping" class="accordion-collapse collapse show" aria-labelledby="headingShipping" data-bs-parent="#purchaseAccordion">
+                            <div class="accordion-body">
+                                <form id="shippingForm">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="shippingFirstName" class="form-label">First Name</label>
+                                            <input type="text" class="form-control shipping-input" id="shippingFirstName" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="shippingLastName" class="form-label">Last Name</label>
+                                            <input type="text" class="form-control shipping-input" id="shippingLastName" required>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label for="shippingAddress1" class="form-label">Street Address 1</label>
+                                            <input type="text" class="form-control shipping-input" id="shippingAddress1" required>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label for="shippingAddress2" class="form-label">Street Address 2</label>
+                                            <input type="text" class="form-control shipping-input" id="shippingAddress2">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="shippingCity" class="form-label">City</label>
+                                            <input type="text" class="form-control shipping-input" id="shippingCity" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="shippingState" class="form-label">State</label>
+                                            <input type="text" class="form-control shipping-input" id="shippingState" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="shippingZipCode" class="form-label">Zip Code</label>
+                                            <input type="text" class="form-control shipping-input" id="shippingZipCode" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="shippingEmail" class="form-label">Email</label>
+                                            <input type="email" class="form-control shipping-input" id="shippingEmail" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="shippingConfirmEmail" class="form-label">Confirm Email</label>
+                                            <input type="email" class="form-control shipping-input" id="shippingConfirmEmail" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="shippingPhoneNumber" class="form-label">Phone Number</label>
+                                            <input type="tel" class="form-control shipping-input" id="shippingPhoneNumber" required>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Payment Information -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingPayment">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePayment" aria-expanded="false" aria-controls="collapsePayment">
+                                Pay With
+                            </button>
+                        </h2>
+                        <div id="collapsePayment" class="accordion-collapse collapse" aria-labelledby="headingPayment" data-bs-parent="#purchaseAccordion">
+                            <div class="accordion-body">
+                                <form id="paymentForm">
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label for="cardNumber" class="form-label">Card Number</label>
+                                            <input type="text" class="form-control" id="cardNumber" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="cardExpiration" class="form-label">Expiration Date</label>
+                                            <input type="text" class="form-control" id="cardExpiration" placeholder="MM/YY" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="cardSecurityCode" class="form-label">Security Code</label>
+                                            <input type="text" class="form-control" id="cardSecurityCode" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="cardFirstName" class="form-label">First Name</label>
+                                            <input type="text" class="form-control" id="cardFirstName" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="cardLastName" class="form-label">Last Name</label>
+                                            <input type="text" class="form-control" id="cardLastName" required>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="purchaseForm" class="btn btn-asu-gold">
+                    <i class="fas fa-credit-card me-1"></i> Confirm Purchase
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/example_app_page.js') }}"></script>
 </body>

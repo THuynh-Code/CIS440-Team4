@@ -493,3 +493,92 @@ function handleMessage(message) {
         addGlowEffect(elementId);
     }
 }
+
+// Opens newListingModal when Create Listing Button is pressed
+function openNewListingModal() {
+    const modalElement = document.getElementById('newListingModal');
+    const modal = new bootstrap.Modal(modalElement); // Use Bootstrap's Modal class
+    modal.show(); // Display the modal
+}
+
+// opens modal for an expanded view when a listed object is clicked on
+document.addEventListener("DOMContentLoaded", function () {
+    // Select all listing cards
+    const listingCards = document.querySelectorAll(".listing-card");
+
+    listingCards.forEach((card) => {
+        card.addEventListener("click", function () {
+            // Get data from the clicked card
+            const title = card.querySelector(".card-title").innerText;
+            const price = card.querySelector(".price-text").innerText;
+            const description = card.querySelector(".description-text").innerText;
+            const location = card.querySelector(".location-badge").innerText;
+            const imageSrc = card.querySelector(".listing-img").getAttribute("src");
+
+            // Populate modal with data
+            document.getElementById("expandedModalTitle").innerText = title;
+            document.getElementById("expandedModalPrice").innerText = price;
+            document.getElementById("expandedModalDescription").innerText = description;
+            document.getElementById("expandedModalLocation").querySelector("span").innerText = location;
+            document.getElementById("expandedModalImage").setAttribute("src", imageSrc);
+
+            // Show the modal
+            const expandedModal = new bootstrap.Modal(document.getElementById("expandedViewModal"));
+            expandedModal.show();
+        });
+    });
+});
+
+// Opens purchaseModal within expandedViewModal
+document.addEventListener("DOMContentLoaded", function () {
+    // Add event listener to the purchase button in the expanded view modal
+    const purchaseButton = document.querySelector("#expandedViewModal .btn-asu-gold");
+
+    purchaseButton.addEventListener("click", function () {
+        // Hide the expanded view modal
+        const expandedModal = bootstrap.Modal.getInstance(document.getElementById("expandedViewModal"));
+        expandedModal.hide();
+
+        // Show the purchase modal
+        const purchaseModal = new bootstrap.Modal(document.getElementById("purchaseModal"));
+        purchaseModal.show();
+    });
+});
+
+// When checking "In-Person Pickup," grays out shipping info and disabless input
+function toggleShippingInfo() {
+    const isPickup = document.getElementById("inPersonPickupCheckbox").checked;
+    const shippingInputs = document.querySelectorAll(".shipping-input");
+    const shippingCollapse = document.getElementById("collapseShipping");
+
+    if (isPickup) {
+        // Clear all inputs
+        shippingInputs.forEach(input => {
+            input.value = ""; // Clear value
+            input.disabled = true; // Disable input
+        });
+
+        // Collapse the Shipping Information accordion
+        shippingCollapse.classList.remove("show");
+
+        // Disable the accordion button
+        const shippingAccordionButton = document.querySelector("#headingShipping button");
+        shippingAccordionButton.disabled = true;
+    } else {
+        // Enable inputs and reopen the accordion
+        shippingInputs.forEach(input => {
+            input.disabled = false;
+        });
+
+        // Reopen the Shipping Information accordion
+        shippingCollapse.classList.add("show");
+
+        // Enable the accordion button
+        const shippingAccordionButton = document.querySelector("#headingShipping button");
+        shippingAccordionButton.disabled = false;
+    }
+}
+
+
+
+

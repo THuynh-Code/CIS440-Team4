@@ -3,114 +3,45 @@ import jwt  # Import PyJWT
 from flask import Blueprint, current_app, request, jsonify, render_template
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
-from extensions import db  # Import db from the newly created extensions.py file
-from model import User, Chatroom  # Import the User model
+from extensions import db
+from model import User, Listing  # Removed Chatroom from imports
 
 # Helper function to decode the JWT token and validate the user
 def validate_token(request):
-    auth_header = request.headers.get('Authorization', None)  # Extract the authorization header
+    auth_header = request.headers.get('Authorization', None)
     if not auth_header:
-        return None, jsonify({"error": "Token is missing!"}), 401  # Return error if token is missing
+        return None, jsonify({"error": "Token is missing!"}), 401
 
     try:
-        token = auth_header.split(" ")[1]  # Split the header and get the token (format: "Bearer <token>")
-        decoded_token = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])  # Decode the JWT token
-        user = User.query.filter_by(email=decoded_token['sub']).first()  # Find the user by email
+        token = auth_header.split(" ")[1]
+        decoded_token = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        user = User.query.filter_by(email=decoded_token['sub']).first()
         if not user:
-            return None, jsonify({"error": "User not found!"}), 404  # Return error if user not found
-        return user, None  # Return the user if the token is valid
+            return None, jsonify({"error": "User not found!"}), 404
+        return user, None
     except jwt.ExpiredSignatureError:
-        return None, jsonify({"error": "Token has expired"}), 401  # Token has expired
+        return None, jsonify({"error": "Token has expired"}), 401
     except jwt.InvalidTokenError as e:
-        return None, jsonify({"error": f"Token error: {str(e)}"}), 401  # Return error if token validation fails
+        return None, jsonify({"error": f"Token error: {str(e)}"}), 401
 
-
-# Define a blueprint for routing (modularizes the app's routes)
 routes_blueprint = Blueprint('routes', __name__)
 
-# Default route to serve the index.html file (home page)
+# Page Routes
 @routes_blueprint.route('/')
 def index():
-    return render_template('index.html')  # Render the index.html template when accessing '/'
+    return render_template('index.html')
 
 @routes_blueprint.route('/inside')
 def inside():
-    return render_template('example_app_page.html')  # Render the index.html template when accessing '/'
+    return render_template('example_app_page.html')  # Changed from example_app_page.html
 
-# Route to handle account creation
+# Authentication Routes
 @routes_blueprint.route('/create_account', methods=['POST'])
 def create_account():
-    data = request.json  # Extract the incoming JSON data from the request
-
+    data = request.json
     email = data.get('email')
     password = data.get('password')
     description = data.get('description')
-
-    # Check if any required fields are missing
-    if not email or not password:
-        return jsonify({"error": "Missing email or password"}), 400  # Return error if any fields are missing
-
-    # Check if a user with the provided email already exists
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return jsonify({"error": "User with that email already exists"}), 400  # Return error if the email is already registered
-
-    # Hash the user's password for security
-    hashed_password = generate_password_hash(password, method='sha256')
-
-    # Create the new account
-    new_user = User(email=email, password=hashed_password, description=description)
-    db.session.add(new_user)  # Add the new user to the database session
-    db.session.commit()  # Commit the transaction to save the new user
-
-    return jsonify({"message": "Account created successfully!"}), 201  # Return success message
-
-
-# Route to handle user login
-@routes_blueprint.route('/login', methods=['POST'])
-def login():
-    data = request.json  # Extract the incoming JSON data from the request
-
-    email = data.get('email')
-    password = data.get('password')
-
-    # Check if any required fields are missing
-    if not email or not password:
-        return jsonify({"error": "Missing email or password"}), 400  # Return error if email or password is missing
-
-    # Check if the user exists and if the password matches
-    user = User.query.filter_by(email=email).first()
-    if not user or not check_password_hash(user.password, password):
-        return jsonify({"error": "Invalid credentials"}), 400  # Return error if credentials are invalid
-
-    # Generate a JWT token that expires in 1 hour
-    token = create_access_token(identity=user.email, expires_delta=datetime.timedelta(hours=1))
-
-    # Return success message, token, and the user's admin status
-    return jsonify({
-        "message": "Login successful!", 
-        "token": token,
-        "admin": user.admin  # Include the admin property in the response
-    }), 200
-
-
-# Route to add a new user (requires JWT token)
-@routes_blueprint.route('/add_user', methods=['POST'])
-def add_user():
-    current_user, error = validate_token(request)
-    if error:
-        return error  # If token validation fails, return the error
-
-    # Check if the current user is an admin
-    if not current_user.admin:
-        return jsonify({"error": "You do not have the necessary permissions to perform this action"}), 403  # Return forbidden error if not admin
-
-    data = request.json  # Extract the incoming JSON data
-
-    email = data.get('email')
-    password = data.get('password')
-    description = data.get('description')
-    is_admin = data.get('isAdmin', False)  # Updated: Get the admin parameter, defaulting to False
 
     if not email or not password:
         return jsonify({"error": "Missing email or password"}), 400
@@ -120,154 +51,240 @@ def add_user():
         return jsonify({"error": "User with that email already exists"}), 400
 
     hashed_password = generate_password_hash(password, method='sha256')
-    new_user = User(email=email, password=hashed_password, description=description, admin=is_admin)  # Updated: Use isAdmin for the new user object
+    new_user = User(email=email, password=hashed_password, description=description)
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({"message": "User added successfully!"}), 201
+    return jsonify({"message": "Account created successfully!"}), 201
 
-
-# Route to edit a user (requires JWT token)
-@routes_blueprint.route('/edit_user/<int:user_id>', methods=['PUT'])
-def edit_user(user_id):
-    current_user, error = validate_token(request)
-    if error:
-        return error  # If token validation fails, return the error
-
-    # Check if the current user is an admin
-    if not current_user.admin:
-        return jsonify({"error": "You do not have the necessary permissions to perform this action"}), 403  # Return forbidden error if not admin
-
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"error": "User not found"}), 404  # Return error if user not found
-
+@routes_blueprint.route('/login', methods=['POST'])
+def login():
     data = request.json
     email = data.get('email')
-    description = data.get('description')
-    is_admin = data.get('admin', False)  # Get the admin parameter, defaulting to False
+    password = data.get('password')
 
-    # Update user information if provided
-    if email:
-        user.email = email
-    if description:
-        user.description = description
-    user.admin = is_admin  # Update the admin status
+    if not email or not password:
+        return jsonify({"error": "Missing email or password"}), 400
 
-    db.session.commit()
+    user = User.query.filter_by(email=email).first()
+    if not user or not check_password_hash(user.password, password):
+        return jsonify({"error": "Invalid credentials"}), 400
 
-    return jsonify({"message": "User updated successfully!"}), 200
+    token = create_access_token(identity=user.email, expires_delta=datetime.timedelta(hours=1))
+    return jsonify({
+        "message": "Login successful!",
+        "token": token,
+        "admin": user.admin
+    }), 200
 
-
-# Route to delete a user (requires JWT token)
-@routes_blueprint.route('/delete_user/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    current_user, error = validate_token(request)
-    if error:
-        return error  # If token validation fails, return the error
-
-    # Check if the current user is an admin
-    if not current_user.admin:
-        return jsonify({"error": "You do not have the necessary permissions to perform this action"}), 403  # Return forbidden error if not admin
-
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"error": "User not found"}), 404  # Return error if user not found
-
-    db.session.delete(user)
-    db.session.commit()
-
-    return jsonify({"message": "User deleted successfully!"}), 200
-
-
-# Route to get all users (requires JWT token)
+# User Management Routes
 @routes_blueprint.route('/users', methods=['GET'])
 def get_all_users():
     current_user, error = validate_token(request)
     if error:
-        return error  # If token validation fails, return the error
+        return error
 
-    # Check if the current user is an admin
     if not current_user.admin:
-        return jsonify({"error": "You do not have the necessary permissions to access this resource"}), 403  # Return a forbidden error if not admin
+        return jsonify({"error": "Unauthorized access"}), 403
 
-    # Retrieve all users from the database
-    users = User.query.all()  
-    users_data = [{"id": user.id, "email": user.email, "description": user.description, "admin": user.admin} for user in users]  # Format the user data
+    users = User.query.all()
+    users_data = [{"id": user.id, "email": user.email, "description": user.description, "admin": user.admin} 
+                 for user in users]
+    return jsonify(users_data), 200
 
-    return jsonify(users_data), 200  # Return the list of all users
-
-# Route to get all chatrooms (requires JWT token but no admin permission needed)
-@routes_blueprint.route('/chatrooms', methods=['GET'])
-def get_all_chatrooms():
+@routes_blueprint.route('/add_user', methods=['POST'])
+def add_user():
     current_user, error = validate_token(request)
     if error:
-        return error  # If token validation fails, return the error
+        return error
 
-    # Retrieve all chatrooms from the database
-    chatrooms = Chatroom.query.all()
-    chatrooms_data = [{"id": chatroom.id, "name": chatroom.name, "description": chatroom.description} for chatroom in chatrooms]  # Format the chatroom data
-
-    return jsonify(chatrooms_data), 200  # Return the list of all chatrooms
-
-# Route to add a new chatroom (requires JWT token)
-@routes_blueprint.route('/add_chatroom', methods=['POST'])
-def add_chatroom():
-    current_user, error = validate_token(request)
-    if error:
-        return error  # If token validation fails, return the error
-
-    data = request.json  # Extract the incoming JSON data
-
-    name = data.get('name')
-    description = data.get('description')
-
-    if not name or not description:
-        return jsonify({"error": "Missing name or description"}), 400
-
-    new_chatroom = Chatroom(name=name, description=description)
-    db.session.add(new_chatroom)
-    db.session.commit()
-
-    return jsonify({"message": "Chatroom added successfully!"}), 201
-
-# Route to edit a chatroom (requires JWT token)
-@routes_blueprint.route('/edit_chatroom/<int:chatroom_id>', methods=['PUT'])
-def edit_chatroom(chatroom_id):
-    current_user, error = validate_token(request)
-    if error:
-        return error  # If token validation fails, return the error
-
-    chatroom = Chatroom.query.get(chatroom_id)
-    if not chatroom:
-        return jsonify({"error": "Chatroom not found"}), 404  # Return error if chatroom not found
+    if not current_user.admin:
+        return jsonify({"error": "Unauthorized access"}), 403
 
     data = request.json
-    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
     description = data.get('description')
+    is_admin = data.get('isAdmin', False)
 
-    # Update chatroom information if provided
-    if name:
-        chatroom.name = name
-    if description:
-        chatroom.description = description
+    if not email or not password:
+        return jsonify({"error": "Missing required fields"}), 400
 
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Email already registered"}), 400
+
+    hashed_password = generate_password_hash(password, method='sha256')
+    new_user = User(email=email, password=hashed_password, description=description, admin=is_admin)
+    db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({"message": "Chatroom updated successfully!"}), 200
+    return jsonify({"id": new_user.id, "email": new_user.email, "description": new_user.description, 
+                   "admin": new_user.admin}), 201
 
-# Route to delete a chatroom (requires JWT token)
-@routes_blueprint.route('/delete_chatroom/<int:chatroom_id>', methods=['DELETE'])
-def delete_chatroom(chatroom_id):
+@routes_blueprint.route('/edit_user/<int:user_id>', methods=['PUT'])
+def edit_user(user_id):
     current_user, error = validate_token(request)
     if error:
-        return error  # If token validation fails, return the error
+        return error
 
-    chatroom = Chatroom.query.get(chatroom_id)
-    if not chatroom:
-        return jsonify({"error": "Chatroom not found"}), 404  # Return error if chatroom not found
+    if not current_user.admin:
+        return jsonify({"error": "Unauthorized access"}), 403
 
-    db.session.delete(chatroom)
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json
+    user.email = data.get('email', user.email)
+    user.description = data.get('description', user.description)
+    user.admin = data.get('admin', user.admin)
     db.session.commit()
 
-    return jsonify({"message": "Chatroom deleted successfully!"}), 200
+    return jsonify({"message": "User updated successfully"}), 200
+
+@routes_blueprint.route('/delete_user/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    if not current_user.admin:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": "User deleted successfully"}), 200
+
+# Marketplace Routes
+@routes_blueprint.route('/api/listings', methods=['GET'])
+def get_listings():
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    # Optional query parameters for filtering
+    category = request.args.get('category')
+    campus = request.args.get('campus')
+    search = request.args.get('search')
+
+    query = Listing.query
+
+    if category and category != 'All Categories':
+        query = query.filter(Listing.category == category)
+    if campus and campus != 'All Campuses':
+        query = query.filter(Listing.campus == campus)
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                Listing.title.ilike(search_term),
+                Listing.description.ilike(search_term)
+            )
+        )
+
+    listings = query.order_by(Listing.created_at.desc()).all()
+    return jsonify([listing.to_dict() for listing in listings]), 200
+
+@routes_blueprint.route('/api/listings/create', methods=['POST'])
+def create_listing():
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    try:
+        data = request.json
+        required_fields = ['title', 'price', 'description', 'category', 'campus']
+        
+        if not all(field in data for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        new_listing = Listing(
+            title=data['title'],
+            price=float(data['price']),
+            description=data['description'],
+            category=data['category'],
+            campus=data['campus'],
+            user_id=current_user.id,
+            image_url=data.get('image_url')
+        )
+
+        db.session.add(new_listing)
+        db.session.commit()
+        return jsonify(new_listing.to_dict()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@routes_blueprint.route('/api/listings/<int:listing_id>', methods=['DELETE'])
+def delete_listing(listing_id):
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    listing = Listing.query.get(listing_id)
+    if not listing:
+        return jsonify({"error": "Listing not found"}), 404
+
+    # Check if the current user owns the listing or is an admin
+    if listing.user_id != current_user.id and not current_user.admin:
+        return jsonify({"error": "Unauthorized to delete this listing"}), 403
+
+    try:
+        db.session.delete(listing)
+        db.session.commit()
+        return jsonify({"message": "Listing deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@routes_blueprint.route('/api/listings/<int:listing_id>', methods=['PUT'])
+def update_listing(listing_id):
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    listing = Listing.query.get(listing_id)
+    if not listing:
+        return jsonify({"error": "Listing not found"}), 404
+
+    # Check if the current user owns the listing or is an admin
+    if listing.user_id != current_user.id and not current_user.admin:
+        return jsonify({"error": "Unauthorized to update this listing"}), 403
+
+    try:
+        data = request.json
+        if 'title' in data:
+            listing.title = data['title']
+        if 'price' in data:
+            listing.price = float(data['price'])
+        if 'description' in data:
+            listing.description = data['description']
+        if 'category' in data:
+            listing.category = data['category']
+        if 'campus' in data:
+            listing.campus = data['campus']
+        if 'image_url' in data:
+            listing.image_url = data['image_url']
+        if 'status' in data:
+            listing.status = data['status']
+
+        db.session.commit()
+        return jsonify(listing.to_dict()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@routes_blueprint.route('/api/listings/user/<int:user_id>', methods=['GET'])
+def get_user_listings(user_id):
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    listings = Listing.query.filter_by(user_id=user_id).order_by(Listing.created_at.desc()).all()
+    return jsonify([listing.to_dict() for listing in listings]), 200
