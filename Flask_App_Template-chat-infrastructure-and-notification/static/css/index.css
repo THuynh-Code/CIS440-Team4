@@ -1,0 +1,158 @@
+:root {
+    --asu-maroon: #8C1D40;
+    --asu-gold: #FFC627;
+    --asu-dark: #353535;
+}
+
+body {
+    background: linear-gradient(135deg, var(--asu-maroon) 0%, #4a0f22 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.bg-asu-maroon { 
+    background-color: var(--asu-maroon); 
+}
+
+.text-asu-maroon { 
+    color: var(--asu-maroon); 
+}
+
+.text-asu-gold { 
+    color: var(--asu-gold); 
+}
+
+.btn-asu-maroon {
+    background-color: var(--asu-maroon);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-asu-maroon:hover {
+    background-color: #741534;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.login-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    margin: 2rem auto;
+}
+
+.logo-section {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.logo-section img {
+    width: 120px;
+    margin-bottom: 1rem;
+}
+
+.form-control {
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--asu-maroon);
+    box-shadow: 0 0 0 0.2rem rgba(140, 29, 64, 0.25);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-right: none;
+}
+
+.features-list {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.feature-item {
+    text-align: center;
+    color: #6c757d;
+}
+
+.feature-item i {
+    font-size: 1.5rem;
+    color: var(--asu-maroon);
+    margin-bottom: 0.5rem;
+}
+
+.footer-text {
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 2rem;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: var(--asu-maroon);
+    color: white;
+    padding: 1.5rem;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+/* Form Check Styles */
+.form-check-input:checked {
+    background-color: var(--asu-maroon);
+    border-color: var(--asu-maroon);
+}
+
+/* Fix for Input Groups */
+.input-group {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.input-group .form-control {
+    border-left: none;
+}
+
+.input-group-text {
+    border-top-left-radius: 10px !important;
+    border-bottom-left-radius: 10px !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .login-container {
+        margin: 1rem auto;
+        padding: 1.5rem;
+    }
+
+    .features-list {
+        flex-wrap: wrap;
+    }
+}
+
+.logo-section img {
+    width: 80px;  /* Changed from 120px /
+    height: 80px; / Added to maintain aspect ratio /
+    margin-bottom: 1rem;
+    object-fit: contain; / Ensures the image scales properly */
+}
