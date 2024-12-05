@@ -281,10 +281,25 @@ def update_listing(listing_id):
         return jsonify({"error": str(e)}), 500
 
 @routes_blueprint.route('/api/listings/user/<int:user_id>', methods=['GET'])
-def get_user_listings(user_id):
+def get_user_listings_by_id(user_id):  # Changed function name
     current_user, error = validate_token(request)
     if error:
         return error
 
     listings = Listing.query.filter_by(user_id=user_id).order_by(Listing.created_at.desc()).all()
     return jsonify([listing.to_dict() for listing in listings]), 200
+
+# Second route for getting current user's listings
+@routes_blueprint.route('/api/listings/user/me', methods=['GET'])
+def get_my_listings():  # Changed function name
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    try:
+        # Get all listings for the current user
+        listings = Listing.query.filter_by(user_id=current_user.id).all()
+        return jsonify([listing.to_dict() for listing in listings]), 200
+    except Exception as e:
+        print('Error getting user listings:', e)
+        return jsonify({"error": "Failed to fetch listings"}), 500

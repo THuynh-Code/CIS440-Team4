@@ -95,6 +95,7 @@ body {
     border: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
 }
 
 .listing-card:hover {
@@ -147,15 +148,133 @@ body {
     border-top: 1px solid #e9ecef;
 }
 
+/* Messaging Styles */
+.messaging-section {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+}
+
+.messages-container {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #ffffff;
+}
+
+.message {
+    margin-bottom: 10px;
+    max-width: 80%;
+}
+
+.message.received {
+    margin-right: auto;
+}
+
+.message.sent {
+    margin-left: auto;
+    text-align: right;
+}
+
+.message-content {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 15px;
+    background-color: #f8f9fa;
+}
+
+.message.sent .message-content {
+    background-color: var(--asu-maroon);
+    color: white;
+}
+
+.message.sent .message-content .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.message-text {
+    margin-bottom: 4px;
+}
+
+/* Scrollbar Styles */
+.messages-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Glow Effect for New Messages */
+@keyframes glow {
+    0% {
+        box-shadow: 0 0 5px rgba(140, 29, 64, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(140, 29, 64, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(140, 29, 64, 0.5);
+    }
+}
+
+.glow-effect {
+    animation: glow 2s ease-in-out;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .quick-filters {
         flex-wrap: nowrap;
         -webkit-overflow-scrolling: touch;
+        padding: 0.5rem;
     }
     
     .container {
         padding-left: 1rem;
         padding-right: 1rem;
     }
+
+    .listing-card {
+        margin-bottom: 1rem;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .message {
+        max-width: 90%;
+    }
+}
+
+/* Form Input States */
+.shipping-input:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+}
+
+.form-control::placeholder {
+    color: #6c757d;
+    opacity: 0.8;
+}
+
+/* Purchase Modal Specific Styles */
+#purchaseAccordion .accordion-button:not(.collapsed) {
+    background-color: var(--asu-maroon);
+    color: white;
+}
+
+#purchaseAccordion .accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(140, 29, 64, 0.25);
 }

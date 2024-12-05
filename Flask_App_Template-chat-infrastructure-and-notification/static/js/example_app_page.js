@@ -1,584 +1,611 @@
+// Global variables
+const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjYWFhIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataModel
+    DataModel.initialize();
 
-    // NOTE: IF YOUR APP USES WEBSOCKETS THEN UNCOMMENT THIS LINE
-    //       TO ESTABLISH A CONNECTION TO THE WEBSOCKET SERVER
-
-    // ChatSocket.connect();  // Establish the WebSocket connection
-
-    // NOTE: SET CALLBACKS FOR SOCKET EVENTS HERE (MAPPED TO FUNCTIONS BELOW)
-
-    // ChatSocket.setMessageCallback(sendChat);
-
-    // Example usage: set up event listeners for adding and deleting users (if buttons exist)
-    // Assuming you have addUserButton and deleteUserButton in your HTML
-    /*
-    document.getElementById('addUserButton').addEventListener('click', () => {
-        const email = document.getElementById('userEmail').value;
-        const password = document.getElementById('userPassword').value;
-        const description = document.getElementById('userDescription').value;
-        addUser(email, password, description);
-    });
-    */
-
-    // Listen for the form submission
-    document.getElementById('addUserForm').addEventListener('submit', function(event) {
-        // Prevent the default form submission behavior
-        event.preventDefault();
-    
-        // Collect data from the form inputs
-        var email = document.getElementById('email').value;
-        var password = document.getElementById('password').value;
-        var description = document.getElementById('description').value;
-        // Get the checkbox value and convert it to a boolean
-        var isAdmin = document.getElementById('isAdmin').checked;
-    
-        console.log('Email:', email);
-        console.log('Password:', password);
-        console.log('Description:', description);
-        console.log('Is Admin:', isAdmin); // Log the admin status
-    
-        // Call the addUser function with the form data, including the admin status
-        addUser(email, password, description, isAdmin).then(() => {
-            // Clear the input fields after user is added
-            document.getElementById('email').value = '';
-            document.getElementById('password').value = '';
-            document.getElementById('description').value = '';
-            document.getElementById('isAdmin').checked = false; // Reset the checkbox
-    
-            // Hide the modal using Bootstrap's modal instance
-            const addUserModalEl = document.getElementById('addUserModal');
-            const modalInstance = bootstrap.Modal.getInstance(addUserModalEl); // Get existing modal instance
-            modalInstance.hide();
-        }).catch((error) => {
-            console.error('Error adding user:', error);
-            alert('Error adding user. Please try again.');
-        });
-    
-        loadUsersIntoTable();
-    });
-
-    // Add a listener for the Edit User form submission
-document.getElementById('editUserForm').addEventListener('submit', async function(event) {
-    // Prevent the default form submission behavior
-    event.preventDefault();
-
-    // Collect data from the form inputs
-    const email = document.getElementById('editEmail').value;
-    const description = document.getElementById('editDescription').value;
-    const isAdmin = document.getElementById('editIsAdmin').checked;  // Grab the value of the isAdmin checkbox
-
-    try {
-        // Call the DataModel's editSelectedUser function to update the user
-        await DataModel.editSelectedUser(email, description, isAdmin);  // Pass isAdmin as the third parameter
-
-        // If the update was successful, clear the modal inputs
-        document.getElementById('editEmail').value = '';
-        document.getElementById('editDescription').value = '';
-        document.getElementById('editIsAdmin').checked = false; // Reset the checkbox
-
-        // Hide the modal
-        const editUserModalEl = document.getElementById('editUserModal');
-        const modalInstance = bootstrap.Modal.getInstance(editUserModalEl);
-        modalInstance.hide();
-
-        // Alert that the user was successfully edited
-        alert('User successfully edited!');
-
-        // Refresh the user list in the table
-        loadUsersIntoTable();
-    } catch (error) {
-        console.error('Error editing user:', error);
-        alert('Error editing user. Please try again.');
+    // Connect WebSocket if user is authenticated
+    if (localStorage.getItem('jwtToken')) {
+        ChatSocket.connect();
+        ChatSocket.setMessageCallback(handleMessage);
     }
-});
 
-    // Listener for adding a chatroom (To be placed inside the DOMContentLoaded event listener)
-    document.getElementById('addChatroomForm').addEventListener('submit', async function(event) {
-        // Prevent the default form submission behavior
-        event.preventDefault();
-
-        // Collect data from the form inputs
-        const name = document.getElementById('chatroomName').value;
-        const description = document.getElementById('chatroomDescription').value;
-
-        try {
-            // Call the DataModel's addChatroom function to add the chatroom
-            await DataModel.addChatroom(name, description);
-            console.log('Chatroom created:', name);
-            alert('Chatroom successfully added!');
-
-            // Clear the input fields after chatroom is added
-            document.getElementById('chatroomName').value = '';
-            document.getElementById('chatroomDescription').value = '';
-
-            // Hide the modal using Bootstrap's modal instance
-            const addChatroomModalEl = document.getElementById('addChatroomModal');
-            const modalInstance = bootstrap.Modal.getInstance(addChatroomModalEl);
-            modalInstance.hide();
-
-            // Refresh chatroom list in the table
-            loadChatroomsIntoTable();
-        } catch (error) {
-            console.error('Error adding chatroom:', error);
-            alert('Error adding chatroom. Please try again.');
-        }
-    });
-
-    // Listener for editing a chatroom (To be placed inside the DOMContentLoaded event listener)
-    document.getElementById('editChatroomForm').addEventListener('submit', async function(event) {
-        // Prevent the default form submission behavior
-        event.preventDefault();
-
-        // Collect data from the form inputs
-        const name = document.getElementById('editChatroomName').value;
-        const description = document.getElementById('editChatroomDescription').value;
-
-        try {
-            // Call the DataModel's editSelectedChatroom function to update the chatroom
-            await DataModel.editSelectedChatroom(name, description);
-
-            // Clear the modal inputs
-            document.getElementById('editChatroomName').value = '';
-            document.getElementById('editChatroomDescription').value = '';
-
-            // Hide the modal
-            const editChatroomModalEl = document.getElementById('editChatroomModal');
-            const modalInstance = bootstrap.Modal.getInstance(editChatroomModalEl);
-            modalInstance.hide();
-
-            // Alert that the chatroom was successfully edited
-            alert('Chatroom successfully edited!');
-
-            // Refresh chatroom list in the table
-            loadChatroomsIntoTable();
-        } catch (error) {
-            console.error('Error editing chatroom:', error);
-            alert('Error editing chatroom. Please try again.');
-        }
-    });
-
-
-    adminStatus = localStorage.getItem('admin');
-    //alert('adminStatus: ' + adminStatus);
+    // Check admin status and setup UI accordingly
+    const adminStatus = localStorage.getItem('admin') === 'true';
     DataModel.admin = adminStatus;
-    if (adminStatus == 'true') {
-        // Load users into the table after adding a new user
+    
+    if (adminStatus) {
         loadUsersIntoTable();
     } else {
-        // Disable the account management tab
-        //alert('You are not an admin');
-        document.getElementById('account-management-tab').classList.add('disabled');  // Add the 'disabled' class to the tab
-        document.getElementById('account-management-tab').setAttribute('disabled', 'true');  // Set the disabled attribute
-    }
-
-    // Load chatrooms into the table
-    loadChatroomsIntoTable();
-    ChatSocket.setMessageCallback(handleMessage);
-    ChatSocket.connect();
-});
-
-// NOTE: PLACE ALL OF YOUR FUNCTIONS BELOW
-
-// Example function that sends a websocket message via the ChatSocket object
-function sendChat(text) {
-    // Checks to make sure string is not empty
-    if (text.trim() === "") {
-        console.error("Cannot send an empty message.");  // Log error if message is empty
-        return;
-    }
-
-    ChatSocket.sendMessage(text);  // Send the message using ChatSocket
-}
-
-// Function to add a new user
-async function addUser(email, password, description, isAdmin) {
-    if (!email || !password || !description) {
-        console.error("Email, password, and description are required.");
-        return;
-    }
-
-    try {
-        // Use DataModel's addUser function to add the user, including the isAdmin parameter
-        const result = await DataModel.addUser(email, password, description, isAdmin);
-        console.log('User created:', result);
-        alert('User successfully added!');  // Show a success message
-
-        await loadUsersIntoTable();  // Refresh user list in the table after addition
-
-    } catch (error) {
-        console.error('Error adding user:', error);
-        alert('Error adding user. Please try again.');
-    }
-}
-
-// Function to delete a user by ID
-async function deleteUser(userId) {
-    if (!userId) {
-        console.error("User ID is required for deletion.");
-        return;
-    }
-
-    // Ask for user confirmation before proceeding with deletion
-    const isConfirmed = confirm(`Are you sure you want to delete this user? This action cannot be undone.`);
-
-    // If the user confirms the deletion, proceed
-    if (!isConfirmed) {
-        return;  // Exit the function if the user doesn't confirm
-    }
-
-    try {
-        // Call DataModel's deleteUser function to delete the user by their ID
-        DataModel.setSelectedUser(userId);
-        await DataModel.deleteUser();
-        console.log(`User with ID ${userId} deleted.`);
-        alert('User successfully deleted!');  // Show a success message
-        await loadUsersIntoTable();  // Refresh user list in the table after deletion
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Error deleting user. Please try again.');
-    }
-}
-
-// Function to load users into the table
-async function loadUsersIntoTable() {
-    try {
-        const users = await DataModel.getAllUsers();  // Get all users from DataModel
-        const tableBody = document.querySelector('#account-management tbody');  // Select the table body
-        tableBody.innerHTML = '';  // Clear existing table rows
-
-        users.forEach(user => {
-            // Create a new row for each user
-            const row = document.createElement('tr');
-
-            // Email column
-            const emailCell = document.createElement('td');
-            emailCell.textContent = user.email;
-            row.appendChild(emailCell);
-
-            // Admin status column (added next to the email)
-            const adminCell = document.createElement('td');
-            adminCell.textContent = user.admin ? 'Admin' : 'User';  // Display 'Admin' if user is an admin, otherwise 'User'
-            row.appendChild(adminCell);
-
-            // Description column
-            const descriptionCell = document.createElement('td');
-            descriptionCell.textContent = user.description;
-            row.appendChild(descriptionCell);
-
-            // Actions column
-            const actionsCell = document.createElement('td');
-
-            // Edit button
-            const editButton = document.createElement('button');
-            editButton.className = 'btn btn-primary btn-sm me-2';
-            editButton.innerHTML = '<i class="fas fa-edit"></i> Edit';
-            editButton.addEventListener('click', () => showEditModal(user.id));
-            actionsCell.appendChild(editButton);
-
-            // Delete button
-            const deleteButton = document.createElement('button');
-            deleteButton.className = 'btn btn-danger btn-sm';
-            deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
-            deleteButton.addEventListener('click', () => deleteUser(user.id));
-            actionsCell.appendChild(deleteButton);
-
-            row.appendChild(actionsCell);
-
-            // Add the row to the table
-            tableBody.appendChild(row);
-        });
-
-    } catch (error) {
-        console.error('Error loading users into table:', error);
-        alert('Error loading users. Please try again.');
-    }
-}
-
-// Function to load chatrooms into the table and dropdown
-async function loadChatroomsIntoTable() {
-    try {
-        const chatrooms = await DataModel.getAllChatrooms();  // Get all chatrooms from DataModel
-        
-        // Populate the table
-        const tableBody = document.querySelector('#main tbody');  // Select the table body
-        tableBody.innerHTML = '';  // Clear existing content in table
-        
-        chatrooms.forEach(chatroom => {
-            // Create a new row for each chatroom
-            const row = document.createElement('tr');
-            
-            // Chatroom name column
-           // Chatroom name column
-            const nameCell = document.createElement('td');
-            nameCell.textContent = chatroom.name;
-            nameCell.id = "room-"+chatroom.id;  // Set the cell's ID to "room-<id>"
-            row.appendChild(nameCell);
-            
-            // Description column
-            const descriptionCell = document.createElement('td');
-            descriptionCell.textContent = chatroom.description;
-            row.appendChild(descriptionCell);
-            
-            // Actions column
-            const actionsCell = document.createElement('td');
-            
-            // Edit button
-            const editButton = document.createElement('button');
-            editButton.className = 'btn btn-primary btn-sm me-2';
-            editButton.innerHTML = '<i class="fas fa-edit"></i> Edit';
-            editButton.addEventListener('click', () => showEditChatroomModal(chatroom.id));
-            actionsCell.appendChild(editButton);
-            
-            // Delete button
-            const deleteButton = document.createElement('button');
-            deleteButton.className = 'btn btn-danger btn-sm';
-            deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
-            deleteButton.addEventListener('click', () => deleteChatroom(chatroom.id));
-            actionsCell.appendChild(deleteButton);
-            
-            row.appendChild(actionsCell);
-            tableBody.appendChild(row);
-        });
-        
-        // Populate the dropdown
-        const dropdown = document.getElementById('quick_chat_room');
-        dropdown.innerHTML = '<option selected>Select a room...</option>';  // Clear existing options, leaving default
-        
-        chatrooms.forEach(chatroom => {
-            const option = document.createElement('option');
-            option.value = chatroom.id;  // Set value as chatroom ID
-            option.textContent = chatroom.name;  // Set display text as chatroom name
-            dropdown.appendChild(option);
-        });
-
-    } catch (error) {
-        console.error('Error loading chatrooms into table:', error);
-        alert('Error loading chatrooms. Please try again.');
-    }
-}
-
-function openAddUserModal() {
-    var addUserModal = new bootstrap.Modal(document.getElementById('addUserModal'));
-    addUserModal.show();
-  }
-
-// Function to show the edit modal with user details
-// Function to show the edit modal with user details
-function showEditModal(userId) {
-    // Set the selected user in DataModel
-    DataModel.setSelectedUser(userId);  
-
-    // Get the selected user object from DataModel
-    const user = DataModel.getCurrentUser();  
-
-    // Check if the user exists
-    if (user) {
-        // Populate the email and description inputs in the modal with the user's data
-        document.getElementById('editEmail').value = user.email;
-        document.getElementById('editDescription').value = user.description;
-
-        // Set the checkbox value based on the user's admin status
-        document.getElementById('editIsAdmin').checked = user.admin;  // Update: Set checkbox for admin status
-
-        // Show the edit modal
-        const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
-        editUserModal.show();
-    } else {
-        console.error('User not found');
-    }
-}
-
-// Function to open the Add Chatroom Modal
-function openAddChatroomModal() {
-    var addChatroomModal = new bootstrap.Modal(document.getElementById('addChatroomModal'));
-    addChatroomModal.show();
-}
-
-// Function to show the Edit Chatroom Modal with chatroom details
-function showEditChatroomModal(chatroomId) {
-    // Set the selected chatroom in DataModel
-    DataModel.setSelectedChatroom(chatroomId);  
-
-    // Get the selected chatroom object from DataModel
-    const chatroom = DataModel.getCurrentChatroom();  
-
-    // Check if the chatroom exists
-    if (chatroom) {
-        // Populate the name and description inputs in the modal with the chatroom's data
-        document.getElementById('editChatroomName').value = chatroom.name;
-        document.getElementById('editChatroomDescription').value = chatroom.description;
-
-        // Show the edit chatroom modal
-        const editChatroomModal = new bootstrap.Modal(document.getElementById('editChatroomModal'));
-        editChatroomModal.show();
-    } else {
-        console.error('Chatroom not found');
-    }
-}
-
-// Function to delete a chatroom by ID
-async function deleteChatroom(chatroomId) {
-    if (!chatroomId) {
-        console.error("Chatroom ID is required for deletion.");
-        return;
-    }
-
-    // Ask for user confirmation before proceeding with deletion
-    const isConfirmed = confirm(`Are you sure you want to delete this chatroom? This action cannot be undone.`);
-
-    // If the user confirms the deletion, proceed
-    if (!isConfirmed) {
-        return;  // Exit the function if the user doesn't confirm
-    }
-
-    try {
-        // Call DataModel's deleteChatroom function to delete the chatroom by its ID
-        DataModel.setSelectedChatroom(chatroomId);
-        await DataModel.deleteSelectedChatroom();
-        console.log(`Chatroom with ID ${chatroomId} deleted.`);
-        alert('Chatroom successfully deleted!');  // Show a success message
-        await loadChatroomsIntoTable();  // Refresh chatroom list in the table after deletion
-    } catch (error) {
-        console.error('Error deleting chatroom:', error);
-        alert('Error deleting chatroom. Please try again.');
-    }
-}
-
-// Function to send a quick chat message
-function quickChatSend() {
-    const message = document.getElementById('quick_chat_message').value.trim();
-    const roomId = document.getElementById('quick_chat_room').value;
-
-    // Check that both message and room are provided
-    if (!message) {
-        alert('Please enter a message before sending.');
-        return;
-    }
-    if (roomId === "Select a room..." || !roomId) {
-        alert('Please select a chat room before sending.');
-        return;
-    }
-
-    // Send the message through ChatSocket
-    ChatSocket.sendMessage(message, roomId);
-
-    // Clear out the message input box
-    document.getElementById('quick_chat_message').value = '';
-}
-
-function addGlowEffect(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        if (element.classList.contains('glow-effect')) {
-            element.classList.remove('glow-effect');
-            
-            // Re-add the class after a brief delay to restart the animation
-            setTimeout(() => {
-                element.classList.add('glow-effect');
-            }, 100); // 0.1 second delay
-        } else {
-            element.classList.add('glow-effect');
+        const adminTab = document.getElementById('account-management-tab');
+        if (adminTab) {
+            adminTab.classList.add('disabled');
+            adminTab.setAttribute('disabled', 'true');
         }
     }
+
+    // Set up WebSocket callbacks
+    ChatSocket.setMessageCallback(function(data) {
+        addMessageToUI(data);
+    });
+
+    ChatSocket.setNotificationCallback(handleNotification);
+
+    // Setup Filters
+    setupFilters();
+
+    // Setup Form Handlers
+    setupFormHandlers();
+
+    // Load initial listings
+    loadListings();
+});
+
+// Filter Setup and Handling
+function setupFilters() {
+    // Quick filter buttons
+    const quickFilterButtons = document.querySelectorAll('.quick-filters button');
+    quickFilterButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all buttons
+            quickFilterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Set the category select to match the quick filter
+            const categorySelect = document.querySelector('.col-md-3:last-child select');
+            if (categorySelect) {
+                categorySelect.value = this.textContent.trim();
+            }
+            
+            loadListings();
+        });
+    });
+
+    // Search input handler with debounce
+    const searchInput = document.querySelector('.search-section input');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(() => {
+            loadListings();
+        }, 300));
+    }
+
+    // Select handlers
+    const filterSelects = document.querySelectorAll('.col-md-3 select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', () => {
+            loadListings();
+        });
+    });
 }
 
-function handleMessage(message) {
-    // Construct the element ID using the room_id from the message
-    const elementId = `room-${message.room_id}`;
-    
-    // Check if the element exists in the DOM
-    const element = document.getElementById(elementId);
-    if (element) {
-        // If it exists, apply the glow effect
-        addGlowEffect(elementId);
+// Form Handlers Setup
+function setupFormHandlers() {
+    // New Listing Form
+    const newListingForm = document.getElementById('newListingForm');
+    if (newListingForm) {
+        newListingForm.addEventListener('submit', handleNewListing);
+    }
+
+    // Add User Form
+    const addUserForm = document.getElementById('addUserForm');
+    if (addUserForm) {
+        addUserForm.addEventListener('submit', handleAddUser);
+    }
+
+    // Edit User Form
+    const editUserForm = document.getElementById('editUserForm');
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', handleEditUser);
+    }
+
+    // Purchase Modal Checkbox
+    const inPersonPickupCheckbox = document.getElementById('inPersonPickupCheckbox');
+    if (inPersonPickupCheckbox) {
+        inPersonPickupCheckbox.addEventListener('change', toggleShippingInfo);
     }
 }
 
-// Opens newListingModal when Create Listing Button is pressed
+// Modal opener function
 function openNewListingModal() {
     const modalElement = document.getElementById('newListingModal');
-    const modal = new bootstrap.Modal(modalElement); // Use Bootstrap's Modal class
-    modal.show(); // Display the modal
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
 }
 
-// opens modal for an expanded view when a listed object is clicked on
-document.addEventListener("DOMContentLoaded", function () {
-    // Select all listing cards
-    const listingCards = document.querySelectorAll(".listing-card");
+// Listing Management Functions
+async function loadListings() {
+    try {
+        console.log('Loading listings...');
+        
+        // Get current filter values
+        const searchTerm = document.querySelector('.search-section input')?.value || '';
+        const campus = document.querySelector('.col-md-3 select')?.value || 'All Campuses';
+        const category = document.querySelector('.col-md-3:last-child select')?.value || 'All Categories';
 
-    listingCards.forEach((card) => {
-        card.addEventListener("click", function () {
-            // Get data from the clicked card
-            const title = card.querySelector(".card-title").innerText;
-            const price = card.querySelector(".price-text").innerText;
-            const description = card.querySelector(".description-text").innerText;
-            const location = card.querySelector(".location-badge").innerText;
-            const imageSrc = card.querySelector(".listing-img").getAttribute("src");
+        console.log('Filter values:', { searchTerm, campus, category });
 
-            // Populate modal with data
-            document.getElementById("expandedModalTitle").innerText = title;
-            document.getElementById("expandedModalPrice").innerText = price;
-            document.getElementById("expandedModalDescription").innerText = description;
-            document.getElementById("expandedModalLocation").querySelector("span").innerText = location;
-            document.getElementById("expandedModalImage").setAttribute("src", imageSrc);
-
-            // Show the modal
-            const expandedModal = new bootstrap.Modal(document.getElementById("expandedViewModal"));
-            expandedModal.show();
+        // Build query parameters
+        const queryParams = new URLSearchParams({
+            search: searchTerm,
+            campus: campus,
+            category: category
         });
+
+        // Make API request with filters
+        const response = await fetch(`/api/listings?${queryParams}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+
+        console.log('Listings response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch listings');
+        }
+        
+        const listings = await response.json();
+        console.log('Received listings:', listings);
+        displayListings(listings);
+        
+    } catch (error) {
+        console.error('Error loading listings:', error);
+    }
+}
+
+function displayListings(listings) {
+    const container = document.querySelector('.row.g-4');
+    if (!container) {
+        console.error('Listings container not found');
+        return;
+    }
+
+    container.innerHTML = '';
+    
+    listings.forEach(listing => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4 col-xl-3';
+        
+        col.innerHTML = `
+            <div class="card listing-card h-100" style="cursor: pointer;" role="button">
+                <img src="${listing.image_url || defaultImage}" 
+                     class="card-img-top listing-img" 
+                     alt="${listing.title}"
+                     onerror="this.src='${defaultImage}'">
+                <div class="card-body">
+                    <h5 class="card-title text-truncate">${listing.title}</h5>
+                    <p class="price-text">$${listing.price.toFixed(2)}</p>
+                    <p class="description-text">${listing.description}</p>
+                    <div class="location-badge">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>${listing.campus}</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">Posted ${formatTimeAgo(new Date(listing.created_at))}</small>
+                </div>
+            </div>
+        `;
+
+        // Add click event listener to the card
+        const card = col.querySelector('.listing-card');
+        console.log('Setting up click handler for card:', listing.title); // Debug log
+        
+        card.addEventListener('click', function(e) {
+            console.log('Card clicked:', listing); // Debug log
+            showExpandedView(listing);
+        });
+        
+        container.appendChild(col);
     });
-});
+}
 
-// Opens purchaseModal within expandedViewModal
-document.addEventListener("DOMContentLoaded", function () {
-    // Add event listener to the purchase button in the expanded view modal
-    const purchaseButton = document.querySelector("#expandedViewModal .btn-asu-gold");
+async function handleNewListing(event) {
+    event.preventDefault();
+    console.log('Form submitted');
+    const formData = new FormData(event.target);
+    
+    const listingData = {
+        title: formData.get('title'),
+        price: parseFloat(formData.get('price')),
+        category: formData.get('category'),
+        campus: formData.get('campus'),
+        description: formData.get('description'),
+        image_url: formData.get('image_url')
+    };
+    
+    console.log('Sending listing data:', listingData);
+    
+    try {
+        const response = await fetch('/api/listings/create', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(listingData)
+        });
 
-    purchaseButton.addEventListener("click", function () {
-        // Hide the expanded view modal
-        const expandedModal = bootstrap.Modal.getInstance(document.getElementById("expandedViewModal"));
-        expandedModal.hide();
+        console.log('Response status:', response.status);
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
 
-        // Show the purchase modal
-        const purchaseModal = new bootstrap.Modal(document.getElementById("purchaseModal"));
-        purchaseModal.show();
-    });
-});
+        if (!response.ok) {
+            throw new Error('Failed to create listing');
+        }
 
-// When checking "In-Person Pickup," grays out shipping info and disabless input
+        const modal = bootstrap.Modal.getInstance(document.getElementById('newListingModal'));
+        modal.hide();
+        event.target.reset();
+        
+        await loadListings();
+        alert('Listing created successfully!');
+        
+    } catch (error) {
+        console.error('Error creating listing:', error);
+        alert('Failed to create listing: ' + error.message);
+    }
+}
+
+function showExpandedView(listing) {
+    console.log('Opening expanded view for listing:', listing);
+    
+    const modalElement = document.getElementById('expandedViewModal');
+    const modalTitle = document.getElementById('expandedModalTitle');
+    const modalBody = modalElement.querySelector('.modal-body');
+    
+    if (!modalElement || !modalTitle || !modalBody) {
+        console.error('Modal elements not found:', {
+            modal: modalElement,
+            title: modalTitle,
+            body: modalBody
+        });
+        return;
+    }
+
+    try {
+        modalTitle.textContent = listing.title;
+        modalBody.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <img src="${listing.image_url || defaultImage}" 
+                         class="img-fluid rounded" 
+                         alt="${listing.title}">
+                </div>
+                <div class="col-md-6">
+                    <h3 class="price-text mb-3">$${listing.price.toFixed(2)}</h3>
+                    <p class="mb-3">${listing.description}</p>
+                    <div class="location-badge mb-3">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>${listing.campus}</span>
+                    </div>
+                    <div class="seller-info mt-3">
+                        <h5>Seller Information</h5>
+                        <p>${listing.user_email || 'Anonymous'}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="messaging-section mt-4" style="display: none;">
+                <hr>
+                <h5>Message Seller</h5>
+                <div class="messages-container mb-3" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px;">
+                </div>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                    <button class="btn btn-primary" type="button" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        `;
+
+        // Set up message button handler
+        const messageButton = modalElement.querySelector('.btn-outline-primary');
+        if (messageButton) {
+            messageButton.onclick = function() {
+                console.log('Message button clicked');
+                const messagingSection = modalBody.querySelector('.messaging-section');
+                if (messagingSection) {
+                    messagingSection.style.display = 'block';
+                    ChatSocket.joinRoom(`listing_${listing.id}`);
+                }
+            };
+        }
+
+        // Set up purchase button handler
+        const purchaseButton = modalElement.querySelector('.btn-asu-gold');
+        if (purchaseButton) {
+            purchaseButton.onclick = function() {
+                console.log('Purchase button clicked');
+                const expandedModal = bootstrap.Modal.getInstance(modalElement);
+                expandedModal.hide();
+                const purchaseModal = new bootstrap.Modal(document.getElementById('purchaseModal'));
+                purchaseModal.show();
+            };
+        }
+
+        console.log('Showing modal');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+        
+        DataModel.setSelectedListing(listing.id);
+
+    } catch (error) {
+        console.error('Error showing expanded view:', error);
+    }
+}
+
+function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    const listing = DataModel.getCurrentListing();
+    
+    if (message && listing) {
+        ChatSocket.sendMessage(message, listing.user_id);
+        messageInput.value = '';
+        
+        addMessageToUI({
+            message: message,
+            sender_id: 'me',
+            timestamp: new Date()
+        });
+    }
+}
+
+function addMessageToUI(messageData) {
+    const messagesContainer = document.querySelector('.messages-container');
+    if (!messagesContainer) return;
+
+    const messageElement = document.createElement('div');
+    messageElement.className = `message ${messageData.sender_id === 'me' ? 'sent' : 'received'} mb-2`;
+    
+    messageElement.innerHTML = `
+        <div class="message-content p-2 rounded">
+            <div class="message-text">${messageData.message}</div>
+            <small class="text-muted">${formatTimeAgo(new Date(messageData.timestamp))}</small>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function handleNotification(notification) {
+    switch(notification.type) {
+        case 'new_listing':
+            loadListings(); // Reload listings when a new one is created
+            break;
+        case 'listing_update':
+            loadListings(); // Reload listings when one is updated
+            break;
+        case 'purchase':
+            loadListings(); // Reload listings when one is purchased
+            break;
+    }
+}
+
 function toggleShippingInfo() {
-    const isPickup = document.getElementById("inPersonPickupCheckbox").checked;
-    const shippingInputs = document.querySelectorAll(".shipping-input");
-    const shippingCollapse = document.getElementById("collapseShipping");
+    const isPickup = document.getElementById('inPersonPickupCheckbox').checked;
+    const shippingInputs = document.querySelectorAll('.shipping-input');
+    const shippingCollapse = document.getElementById('collapseShipping');
+    const shippingAccordionButton = document.querySelector('#headingShipping button');
+
+    shippingInputs.forEach(input => {
+        input.disabled = isPickup;
+        if (isPickup) input.value = '';
+    });
 
     if (isPickup) {
-        // Clear all inputs
-        shippingInputs.forEach(input => {
-            input.value = ""; // Clear value
-            input.disabled = true; // Disable input
-        });
-
-        // Collapse the Shipping Information accordion
-        shippingCollapse.classList.remove("show");
-
-        // Disable the accordion button
-        const shippingAccordionButton = document.querySelector("#headingShipping button");
+        shippingCollapse.classList.remove('show');
         shippingAccordionButton.disabled = true;
     } else {
-        // Enable inputs and reopen the accordion
-        shippingInputs.forEach(input => {
-            input.disabled = false;
-        });
-
-        // Reopen the Shipping Information accordion
-        shippingCollapse.classList.add("show");
-
-        // Enable the accordion button
-        const shippingAccordionButton = document.querySelector("#headingShipping button");
+        shippingCollapse.classList.add('show');
         shippingAccordionButton.disabled = false;
     }
 }
 
+// Utility Functions
+function formatTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
 
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
+}
 
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
 
+// WebSocket Message Handler
+function handleMessage(data) {
+    if (data.room_id) {
+        const roomElement = document.getElementById(`room-${data.room_id}`);
+        if (roomElement) {
+            addGlowEffect(roomElement);
+        }
+    }
+}
+
+function addGlowEffect(element) {
+    if (element.classList.contains('glow-effect')) {
+        element.classList.remove('glow-effect');
+        setTimeout(() => element.classList.add('glow-effect'), 10);
+    } else {
+        element.classList.add('glow-effect');
+    }
+}
+
+async function showYourListings() {
+    // Hide filter elements
+    const searchSection = document.querySelector('.search-section');
+    const quickFilters = document.querySelector('.quick-filters');
+    if (searchSection) searchSection.style.display = 'none';
+    if (quickFilters) quickFilters.style.display = 'none';
+
+    // Get the main container
+    const container = document.querySelector('.container .row.g-4');
+    if (!container) return;
+
+    try {
+        // Get user's listings
+        const response = await fetch('/api/listings/user/me', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch your listings');
+        const listings = await response.json();
+
+        // Clear and add title
+        container.innerHTML = `
+            <div class="col-12 mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2>Your Listings</h2>
+                    <button class="btn btn-asu-gold" onclick="openNewListingModal()">
+                        <i class="fas fa-plus me-1"></i> Create New Listing
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Display listings
+        listings.forEach(listing => {
+            const col = document.createElement('div');
+            col.className = 'col-12 mb-4';
+            col.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-asu-maroon text-white">
+                        <h5 class="mb-0">${listing.title}</h5>
+                        <span class="badge bg-asu-gold text-dark">${listing.status || 'Active'}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <img src="${listing.image_url || defaultImage}" 
+                                     class="img-fluid rounded" 
+                                     alt="${listing.title}">
+                                <div class="mt-3">
+                                    <p class="mb-2"><strong>Price:</strong> $${listing.price.toFixed(2)}</p>
+                                    <p class="mb-2"><strong>Category:</strong> ${listing.category}</p>
+                                    <p class="mb-2"><strong>Location:</strong> ${listing.campus}</p>
+                                    <p class="mb-0"><strong>Listed:</strong> ${formatTimeAgo(new Date(listing.created_at))}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h6>Description</h6>
+                                <p>${listing.description}</p>
+                                <div class="messages-section">
+                                    <h6 class="mt-4">Messages</h6>
+                                    <div class="messages-container border rounded p-3" style="height: 200px; overflow-y: auto;" id="messages-${listing.id}">
+                                        <div class="text-center text-muted">No messages yet</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <button class="btn btn-danger" onclick="deleteListing(${listing.id})">
+                            <i class="fas fa-trash me-1"></i> Delete Listing
+                        </button>
+                        <button class="btn btn-primary" onclick="editListing(${listing.id})">
+                            <i class="fas fa-edit me-1"></i> Edit Listing
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(col);
+        });
+
+    } catch (error) {
+        console.error('Error loading your listings:', error);
+        alert('Failed to load your listings. Please try again.');
+    }
+}
+
+async function loadListingMessages(listingId) {
+    const messagesContainer = document.getElementById(`messages-${listingId}`);
+    if (!messagesContainer) return;
+
+    try {
+        const response = await fetch(`/api/messages/${listingId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+
+        if (!response.ok) throw new Error('Failed to load messages');
+        const messages = await response.json();
+
+        messagesContainer.innerHTML = messages.length ? '' : 
+            '<div class="text-center text-muted">No messages yet</div>';
+
+        messages.forEach(msg => {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${msg.is_sender ? 'sent' : 'received'} mb-2`;
+            messageEl.innerHTML = `
+                <div class="message-content p-2 rounded">
+                    <small class="text-muted">${msg.sender_email}</small>
+                    <div class="message-text">${msg.message}</div>
+                    <small class="text-muted">${formatTimeAgo(new Date(msg.timestamp))}</small>
+                </div>
+            `;
+            messagesContainer.appendChild(messageEl);
+        });
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    } catch (error) {
+        console.error('Error loading messages:', error);
+        messagesContainer.innerHTML = '<div class="text-center text-danger">Failed to load messages</div>';
+    }
+}
+
+function sendSellerReply(listingId) {
+    const input = document.getElementById(`reply-${listingId}`);
+    const message = input.value.trim();
+    
+    if (message) {
+        ChatSocket.sendMessage(message, listingId);
+        input.value = '';
+    }
+}
+
+function showBrowse() {
+    // Show filter elements
+    const searchSection = document.querySelector('.search-section');
+    const quickFilters = document.querySelector('.quick-filters');
+    if (searchSection) searchSection.style.display = 'block';
+    if (quickFilters) quickFilters.style.display = 'flex';
+
+    // Reset filters and load listings
+    const quickFilterButtons = document.querySelectorAll('.quick-filters button');
+    quickFilterButtons.forEach(btn => btn.classList.remove('active'));
+    
+    const allItemsButton = document.querySelector('.quick-filters button:first-child');
+    if (allItemsButton) {
+        allItemsButton.classList.add('active');
+    }
+
+    const campusSelect = document.querySelector('.col-md-3 select');
+    const categorySelect = document.querySelector('.col-md-3:last-child select');
+    if (campusSelect) campusSelect.value = '';
+    if (categorySelect) categorySelect.value = '';
+
+    const searchInput = document.querySelector('.search-section input');
+    if (searchInput) searchInput.value = '';
+
+    loadListings();
+}

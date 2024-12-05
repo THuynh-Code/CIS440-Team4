@@ -44,5 +44,5 @@ class Listing(db.Model):
             'user_id': self.user_id,
             'image_url': self.image_url,
             'status': self.status,
-            'user_email': self.user.email
+            'user_email': self.user.email if self.user else None
         }
