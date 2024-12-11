@@ -553,6 +553,98 @@ function addGlowEffect(element) {
     }
 }
 
+// async function showYourListings() {
+//     // Hide filter elements
+//     const searchSection = document.querySelector('.search-section');
+//     const quickFilters = document.querySelector('.quick-filters');
+//     if (searchSection) searchSection.style.display = 'none';
+//     if (quickFilters) quickFilters.style.display = 'none';
+
+//     // Get the main container
+//     const container = document.querySelector('.container .row.g-4');
+//     if (!container) return;
+
+//     try {
+//         // Get user's listings
+//         const response = await fetch('/api/listings/user/me', {
+//             headers: {
+//                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+//             }
+//         });
+
+//         if (!response.ok) throw new Error('Failed to fetch your listings');
+//         const listings = await response.json();
+
+//         // Clear and add title
+//         container.innerHTML = `
+//             <div class="col-12 mb-4">
+//                 <div class="d-flex justify-content-between align-items-center">
+//                     <h2>Your Listings</h2>
+//                     <button class="btn btn-asu-gold" onclick="openNewListingModal()">
+//                         <i class="fas fa-plus me-1"></i> Create New Listing
+//                     </button>
+//                 </div>
+//             </div>
+//         `;
+
+//         // Display listings
+//         listings.forEach(listing => {
+//             const col = document.createElement('div');
+//             col.className = 'col-12 mb-4';
+//             col.innerHTML = `
+//                 <div class="card">
+//                     <div class="card-header d-flex justify-content-between align-items-center bg-asu-maroon text-white">
+//                         <h5 class="mb-0">${listing.title}</h5>
+//                         <span class="badge bg-asu-gold text-dark">${listing.status || 'Active'}</span>
+//                     </div>
+//                     <div class="card-body">
+//                         <div class="row">
+//                             <div class="col-md-4">
+//                                 <img src="${listing.image_url || defaultImage}" 
+//                                      class="img-fluid rounded" 
+//                                      alt="${listing.title}">
+//                                 <div class="mt-3">
+//                                     <p class="mb-2"><strong>Price:</strong> $${listing.price.toFixed(2)}</p>
+//                                     <p class="mb-2"><strong>Category:</strong> ${listing.category}</p>
+//                                     <p class="mb-2"><strong>Location:</strong> ${listing.campus}</p>
+//                                     <p class="mb-0"><strong>Listed:</strong> ${formatTimeAgo(new Date(listing.created_at))}</p>
+//                                 </div>
+//                             </div>
+//                             <div class="col-md-8">
+//                                 <h6>Description</h6>
+//                                 <p>${listing.description}</p>
+//                                 <div class="messages-section">
+//                                     <h6 class="mt-4">Messages</h6>
+//                                     <div class="messages-container border rounded p-3" style="height: 200px; overflow-y: auto;" id="messages-${listing.id}">
+//                                         <div class="text-center text-muted">No messages yet</div>
+//                                     </div>
+//                                 </div>
+//                             </div>
+//                         </div>
+//                     </div>
+//                     <div class="card-footer bg-light">
+//                         <button class="btn btn-danger" onclick="deleteListing(${listing.id})">
+//                             <i class="fas fa-trash me-1"></i> Delete Listing
+//                         </button>
+//                         <button class="btn btn-primary" onclick="editListing(${listing.id})">
+//                             <i class="fas fa-edit me-1"></i> Edit Listing
+//                         </button>
+//                     </div>
+//                 </div>
+//             `;
+            
+//             container.appendChild(col);
+//         });
+
+//     } catch (error) {
+//         console.error('Error loading your listings:', error);
+//         alert('Failed to load your listings. Please try again.');
+//     }
+// }
+
+// Update the showYourListings function to include status display
+
+
 async function showYourListings() {
     // Hide filter elements
     const searchSection = document.querySelector('.search-section');
@@ -589,20 +681,24 @@ async function showYourListings() {
 
         // Display listings
         listings.forEach(listing => {
+            const statusColor = listing.status === 'purchased' ? 'text-success' : 'text-dark';
+            const statusText = listing.status === 'purchased' ? 'Purchased' : 'Active';
+            
             const col = document.createElement('div');
             col.className = 'col-12 mb-4';
             col.innerHTML = `
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center bg-asu-maroon text-white">
                         <h5 class="mb-0">${listing.title}</h5>
-                        <span class="badge bg-asu-gold text-dark">${listing.status || 'Active'}</span>
+                        <span class="badge ${statusColor} bg-white">${statusText}</span>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-4">
                                 <img src="${listing.image_url || defaultImage}" 
                                      class="img-fluid rounded" 
-                                     alt="${listing.title}">
+                                     alt="${listing.title}"
+                                     onerror="this.src='${defaultImage}'">
                                 <div class="mt-3">
                                     <p class="mb-2"><strong>Price:</strong> $${listing.price.toFixed(2)}</p>
                                     <p class="mb-2"><strong>Category:</strong> ${listing.category}</p>
@@ -623,12 +719,14 @@ async function showYourListings() {
                         </div>
                     </div>
                     <div class="card-footer bg-light">
-                        <button class="btn btn-danger" onclick="deleteListing(${listing.id})">
-                            <i class="fas fa-trash me-1"></i> Delete Listing
-                        </button>
-                        <button class="btn btn-primary" onclick="editListing(${listing.id})">
-                            <i class="fas fa-edit me-1"></i> Edit Listing
-                        </button>
+                        ${listing.status !== 'purchased' ? `
+                            <button class="btn btn-danger" onclick="deleteListing(${listing.id})">
+                                <i class="fas fa-trash me-1"></i> Delete Listing
+                            </button>
+                            <button class="btn btn-primary" onclick="editListing(${listing.id})">
+                                <i class="fas fa-edit me-1"></i> Edit Listing
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -796,6 +894,65 @@ document.getElementById('email').addEventListener('input', validateEmails);
 document.getElementById('confirmEmail').addEventListener('input', validateEmails);
 
 // Submit purchase form
+// async function submitPurchase() {
+//     const shippingForm = document.getElementById('shippingForm');
+//     const paymentForm = document.getElementById('paymentForm');
+//     const isPickup = document.getElementById('inPersonPickupCheckbox').checked;
+    
+//     // Validate emails match
+//     if (!validateEmails()) {
+//         alert('Email addresses must match');
+//         return;
+//     }
+    
+//     // Validate shipping form if not pickup
+//     if(!isPickup && !shippingForm.checkValidity()) {
+//         shippingForm.reportValidity();
+//         return;
+//     }
+    
+//     // Always validate payment form
+//     if(!paymentForm.checkValidity()) {
+//         paymentForm.reportValidity();
+//         return;
+//     }
+    
+//     try {
+//         // Collect form data and submit
+//         const formData = {
+//             isPickup: isPickup,
+//             shipping: isPickup ? null : {
+//                 firstName: document.getElementById('firstName').value,
+//                 lastName: document.getElementById('lastName').value,
+//                 address1: document.getElementById('address1').value,
+//                 address2: document.getElementById('address2').value,
+//                 city: document.getElementById('city').value,
+//                 state: document.getElementById('state').value,
+//                 zipCode: document.getElementById('zipCode').value,
+//                 email: document.getElementById('email').value,
+//                 phone: document.getElementById('phone').value
+//             },
+//             payment: {
+//                 cardNumber: document.getElementById('cardNumber').value.replace(/\s/g, ''),
+//                 expirationDate: document.getElementById('expirationDate').value,
+//                 securityCode: document.getElementById('securityCode').value
+//             }
+//         };
+        
+//         // TODO: Add API call to process purchase
+//         console.log('Purchase data:', formData);
+        
+//         // Close modal and show success message
+//         const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
+//         modal.hide();
+//         alert('Purchase completed successfully!');
+        
+//     } catch(error) {
+//         console.error('Purchase failed:', error);
+//         alert('Failed to complete purchase. Please try again.');
+//     }
+// }
+
 async function submitPurchase() {
     const shippingForm = document.getElementById('shippingForm');
     const paymentForm = document.getElementById('paymentForm');
@@ -820,9 +977,15 @@ async function submitPurchase() {
     }
     
     try {
-        // Collect form data and submit
+        const currentListing = DataModel.getCurrentListing();
+        if (!currentListing) {
+            throw new Error('No listing selected');
+        }
+
+        // Collect form data
         const formData = {
             isPickup: isPickup,
+            listingId: currentListing.id,
             shipping: isPickup ? null : {
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
@@ -840,13 +1003,23 @@ async function submitPurchase() {
                 securityCode: document.getElementById('securityCode').value
             }
         };
+
+        // Update listing status to purchased
+        await DataModel.updateListing(currentListing.id, {
+            ...currentListing,
+            status: 'purchased'
+        });
         
-        // TODO: Add API call to process purchase
+        // TODO: Add API call to process payment
         console.log('Purchase data:', formData);
         
         // Close modal and show success message
         const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
         modal.hide();
+        
+        // Refresh the listings display
+        await loadListings();
+        
         alert('Purchase completed successfully!');
         
     } catch(error) {
