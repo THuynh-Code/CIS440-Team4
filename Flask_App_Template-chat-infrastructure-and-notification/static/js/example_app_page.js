@@ -252,6 +252,110 @@ async function handleNewListing(event) {
     }
 }
 
+async function deleteListing(listingId) {
+    console.log('Deleting listing with ID:', listingId);
+
+    try {
+        const response = await fetch(`/api/listings/${listingId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            throw new Error('Failed to delete listing');
+        }
+
+        // Remove the listing card from the DOM
+        const listingCard = document.querySelector(`button[onclick="deleteListing(${listingId})"]`).closest('.col-12');
+        if (listingCard) {
+            listingCard.remove();
+        }
+
+        alert('Listing deleted successfully!');
+
+    } catch (error) {
+        console.error('Error deleting listing:', error);
+        alert('Failed to delete listing: ' + error.message);
+    }
+}
+
+async function editListing(listingId) {
+    // First get the current listing data
+    const listing = DataModel.listings.find(l => l.id === listingId);
+    if (!listing) {
+        console.error('Listing not found:', listingId);
+        return;
+    }
+
+    // Get modal elements
+    const modalElement = document.getElementById('editListingModal');
+    if (!modalElement) {
+        console.error('Edit modal not found');
+        return;
+    }
+
+    // Get form elements
+    const titleInput = modalElement.querySelector('input[name="title"]');
+    const priceInput = modalElement.querySelector('input[name="price"]');
+    const descriptionInput = modalElement.querySelector('textarea[name="description"]');
+    const categorySelect = modalElement.querySelector('select[name="category"]');
+    const campusSelect = modalElement.querySelector('select[name="campus"]');
+    const imageUrlInput = modalElement.querySelector('input[name="image_url"]');
+
+    // Populate form with current listing data
+    if (titleInput) titleInput.value = listing.title;
+    if (priceInput) priceInput.value = listing.price;
+    if (descriptionInput) descriptionInput.value = listing.description;
+    if (categorySelect) categorySelect.value = listing.category;
+    if (campusSelect) campusSelect.value = listing.campus;
+    if (imageUrlInput) imageUrlInput.value = listing.image_url || '';
+
+    // Set up form submission handler
+    const form = modalElement.querySelector('form');
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            try {
+                const updates = {
+                    title: titleInput.value,
+                    price: parseFloat(priceInput.value),
+                    description: descriptionInput.value,
+                    category: categorySelect.value,
+                    campus: campusSelect.value,
+                    image_url: imageUrlInput.value
+                };
+
+                // Update the listing using DataModel
+                await DataModel.updateListing(listingId, updates);
+
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                modal.hide();
+
+                // Refresh the listings display
+                await loadListings();
+
+                // Show success message
+                alert('Listing updated successfully!');
+
+            } catch (error) {
+                console.error('Error updating listing:', error);
+                alert('Failed to update listing: ' + error.message);
+            }
+        };
+    }
+
+    // Show the modal
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
+
 function showExpandedView(listing) {
     console.log('Opening expanded view for listing:', listing);
     
@@ -534,12 +638,12 @@ async function showYourListings() {
     }
 }
 
-async function loadListingMessages(listingId) {
-    const messagesContainer = document.getElementById(`messages-${listingId}`);
+async function loadListingMessages(listing_id) {
+    const messagesContainer = document.getElementById(`messages-${listing_id}`);
     if (!messagesContainer) return;
 
     try {
-        const response = await fetch(`/api/messages/${listingId}`, {
+        const response = await fetch(`/api/messages/${listing_id}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
             }
