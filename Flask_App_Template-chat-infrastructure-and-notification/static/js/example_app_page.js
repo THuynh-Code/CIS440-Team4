@@ -253,6 +253,10 @@ async function handleNewListing(event) {
 }
 
 async function deleteListing(listingId) {
+    if (!confirm('Are you sure you want to delete this listing?')) {
+        return;
+    }
+
     console.log('Deleting listing with ID:', listingId);
 
     try {
