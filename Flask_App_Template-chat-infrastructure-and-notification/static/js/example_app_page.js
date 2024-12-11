@@ -768,11 +768,19 @@ async function showYourListings() {
 
 
 
+// Update loadListingMessages to automatically join WebSocket room
 async function loadListingMessages(listingId) {
     const messagesContainer = document.getElementById(`messages-${listingId}`);
     if (!messagesContainer) return;
 
     try {
+        // Join the WebSocket room for this listing
+        ChatSocket.socket.emit('join', {
+            room: `listing_${listingId}`,
+            token: localStorage.getItem('jwtToken')
+        });
+
+        // Fetch existing messages
         const response = await fetch(`/api/messages/${listingId}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
@@ -809,24 +817,81 @@ async function loadListingMessages(listingId) {
         console.error('Error loading messages:', error);
         messagesContainer.innerHTML = '<div class="text-center text-danger">Failed to load messages</div>';
     }
-}
+}        
 
-function sendSellerReply(listingId) {
+async function sendSellerReply(listingId) {
     const input = document.getElementById(`reply-${listingId}`);
     const message = input.value.trim();
     
-    if (message) {
-        // Send via WebSocket
+    if (!message) return;
+
+    try {
+        // Send message via API
+        const response = await fetch(`/api/messages/${listingId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to send message');
+        }
+
+        // Also emit via WebSocket for real-time updates
         ChatSocket.socket.emit('message', {
             message: message,
             listing_id: listingId,
             token: localStorage.getItem('jwtToken')
         });
-        
+
         // Clear input
         input.value = '';
+
+        // Add message to UI immediately
+        const messagesContainer = document.getElementById(`messages-${listingId}`);
+        if (messagesContainer) {
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message sent mb-2';
+            messageEl.innerHTML = `
+                <div class="message-content p-2 rounded bg-asu-maroon text-white">
+                    <small class="text-white-50">${localStorage.getItem('userEmail')}</small>
+                    <div class="message-text">${message}</div>
+                    <small class="text-white-50">just now</small>
+                </div>
+            `;
+            messagesContainer.appendChild(messageEl);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+    } catch (error) {
+        console.error('Error sending reply:', error);
+        alert('Failed to send message. Please try again.');
     }
 }
+
+// Add WebSocket listener for new messages
+ChatSocket.socket.on('new_message', function(data) {
+    const messagesContainer = document.getElementById(`messages-${data.listing_id}`);
+    if (messagesContainer) {
+        const isSent = data.sender_id === parseInt(localStorage.getItem('userId'));
+        const messageEl = document.createElement('div');
+        messageEl.className = `message ${isSent ? 'sent' : 'received'} mb-2`;
+        messageEl.innerHTML = `
+            <div class="message-content p-2 rounded ${isSent ? 'bg-asu-maroon text-white' : 'bg-light'}">
+                <small class="${isSent ? 'text-white-50' : 'text-muted'}">${data.sender_email}</small>
+                <div class="message-text">${data.message}</div>
+                <small class="${isSent ? 'text-white-50' : 'text-muted'}">just now</small>
+            </div>
+        `;
+        messagesContainer.appendChild(messageEl);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+});
 
 function showBrowse() {
     // Show filter elements
