@@ -285,110 +285,107 @@
     </div>
 </div>
 
-<!-- Purchase Modal -->
-<div class="modal fade" id="purchaseModal" tabindex="-1">
+<div id="purchaseModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-asu-maroon text-white">
                 <h5 class="modal-title">Complete Your Purchase</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
             <div class="modal-body">
                 <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="inPersonPickupCheckbox" onchange="toggleShippingInfo()">
+                    <input class="form-check-input" type="checkbox" id="inPersonPickupCheckbox">
                     <label class="form-check-label" for="inPersonPickupCheckbox">
                         In-Person Pickup (No Shipping Required)
                     </label>
                 </div>
 
-                <div class="accordion" id="purchaseAccordion">
-                    <!-- Shipping Information -->
+                <div id="purchaseAccordion" class="accordion">
+                    <!-- Shipping Information Section -->
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="headingShipping">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseShipping" aria-expanded="true" aria-controls="collapseShipping">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseShipping">
                                 Shipping Information
                             </button>
                         </h2>
-                        <div id="collapseShipping" class="accordion-collapse collapse show" aria-labelledby="headingShipping" data-bs-parent="#purchaseAccordion">
+                        <div id="collapseShipping" class="accordion-collapse collapse show" data-bs-parent="#purchaseAccordion">
                             <div class="accordion-body">
-                                <form id="shippingForm">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label for="shippingFirstName" class="form-label">First Name</label>
-                                            <input type="text" class="form-control shipping-input" id="shippingFirstName" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="shippingLastName" class="form-label">Last Name</label>
-                                            <input type="text" class="form-control shipping-input" id="shippingLastName" required>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <label for="shippingAddress1" class="form-label">Street Address 1</label>
-                                            <input type="text" class="form-control shipping-input" id="shippingAddress1" required>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <label for="shippingAddress2" class="form-label">Street Address 2</label>
-                                            <input type="text" class="form-control shipping-input" id="shippingAddress2">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="shippingCity" class="form-label">City</label>
-                                            <input type="text" class="form-control shipping-input" id="shippingCity" required>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label for="shippingState" class="form-label">State</label>
-                                            <input type="text" class="form-control shipping-input" id="shippingState" required>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label for="shippingZipCode" class="form-label">Zip Code</label>
-                                            <input type="text" class="form-control shipping-input" id="shippingZipCode" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="shippingEmail" class="form-label">Email</label>
-                                            <input type="email" class="form-control shipping-input" id="shippingEmail" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="shippingConfirmEmail" class="form-label">Confirm Email</label>
-                                            <input type="email" class="form-control shipping-input" id="shippingConfirmEmail" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="shippingPhoneNumber" class="form-label">Phone Number</label>
-                                            <input type="tel" class="form-control shipping-input" id="shippingPhoneNumber" required>
-                                        </div>
+                                <form id="shippingForm" class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="firstName" class="form-label">First Name *</label>
+                                        <input type="text" class="form-control" id="firstName" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="lastName" class="form-label">Last Name *</label>
+                                        <input type="text" class="form-control" id="lastName" required>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label for="address1" class="form-label">Street Address 1 *</label>
+                                        <input type="text" class="form-control" id="address1" required>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label for="address2" class="form-label">Street Address 2</label>
+                                        <input type="text" class="form-control" id="address2">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="city" class="form-label">City *</label>
+                                        <input type="text" class="form-control" id="city" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="state" class="form-label">State *</label>
+                                        <select class="form-select" id="state" required>
+                                            <option value="">Choose...</option>
+                                            <option value="AZ">Arizona</option>
+                                            <!-- Add other states as needed -->
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="zipCode" class="form-label">Zip Code *</label>
+                                        <input type="text" class="form-control" id="zipCode" pattern="[0-9]{5}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="email" class="form-label">Email *</label>
+                                        <input type="email" class="form-control" id="email" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="confirmEmail" class="form-label">Confirm Email *</label>
+                                        <input type="email" class="form-control" id="confirmEmail" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="phone" class="form-label">Phone Number *</label>
+                                        <input type="tel" class="form-control" id="phone" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" 
+                                               placeholder="XXX-XXX-XXXX" required>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
-                    <!-- Payment Information -->
+
+                    <!-- Payment Section -->
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="headingPayment">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePayment" aria-expanded="false" aria-controls="collapsePayment">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePayment">
                                 Pay With
                             </button>
                         </h2>
-                        <div id="collapsePayment" class="accordion-collapse collapse" aria-labelledby="headingPayment" data-bs-parent="#purchaseAccordion">
+                        <div id="collapsePayment" class="accordion-collapse collapse" data-bs-parent="#purchaseAccordion">
                             <div class="accordion-body">
-                                <form id="paymentForm">
-                                    <div class="row g-3">
-                                        <div class="col-md-12">
-                                            <label for="cardNumber" class="form-label">Card Number</label>
-                                            <input type="text" class="form-control" id="cardNumber" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="cardExpiration" class="form-label">Expiration Date</label>
-                                            <input type="text" class="form-control" id="cardExpiration" placeholder="MM/YY" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="cardSecurityCode" class="form-label">Security Code</label>
-                                            <input type="text" class="form-control" id="cardSecurityCode" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="cardFirstName" class="form-label">First Name</label>
-                                            <input type="text" class="form-control" id="cardFirstName" required>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="cardLastName" class="form-label">Last Name</label>
-                                            <input type="text" class="form-control" id="cardLastName" required>
-                                        </div>
+                                <form id="paymentForm" class="row g-3">
+                                    <div class="col-md-12">
+                                        <label for="cardNumber" class="form-label">Card Number *</label>
+                                        <input type="text" class="form-control" id="cardNumber" pattern="[0-9]{4} [0-9]{4} [0-9]{4} [0-9]{4}"
+                                               placeholder="XXXX XXXX XXXX XXXX" maxlength="19" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="expirationDate" class="form-label">Expiration Date *</label>
+                                        <input type="text" class="form-control" id="expirationDate" pattern="(0[1-9]|1[0-2])\/[0-9]{2}"
+                                               placeholder="MM/YY" maxlength="5" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="securityCode" class="form-label">Security Code *</label>
+                                        <input type="text" class="form-control" id="securityCode" pattern="[0-9]{3}"
+                                               placeholder="XXX" maxlength="3" required>
                                     </div>
                                 </form>
                             </div>
@@ -396,11 +393,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" form="purchaseForm" class="btn btn-asu-gold">
-                    <i class="fas fa-credit-card me-1"></i> Confirm Purchase
-                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-asu-gold" onclick="submitPurchase()">Confirm Purchase</button>
             </div>
         </div>
     </div>

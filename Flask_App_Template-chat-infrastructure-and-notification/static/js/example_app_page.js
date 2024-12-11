@@ -717,3 +717,140 @@ function showBrowse() {
 
     loadListings();
 }
+
+// Format credit card number while typing
+document.getElementById('cardNumber').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    let formattedValue = '';
+    
+    for(let i = 0; i < value.length && i < 16; i++) {
+        if(i > 0 && i % 4 === 0) {
+            formattedValue += ' ';
+        }
+        formattedValue += value[i];
+    }
+    
+    e.target.value = formattedValue;
+});
+
+// Format phone number while typing
+document.getElementById('phone').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    let formattedValue = '';
+    
+    if(value.length > 0) {
+        formattedValue = value.substring(0, 3);
+        if(value.length > 3) {
+            formattedValue += '-' + value.substring(3, 6);
+        }
+        if(value.length > 6) {
+            formattedValue += '-' + value.substring(6, 10);
+        }
+    }
+    
+    e.target.value = formattedValue;
+});
+
+// Format expiration date while typing
+document.getElementById('expirationDate').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    let formattedValue = '';
+    
+    if(value.length > 0) {
+        formattedValue = value.substring(0, 2);
+        if(value.length > 2) {
+            formattedValue += '/' + value.substring(2, 4);
+        }
+    }
+    
+    e.target.value = formattedValue;
+});
+
+// Format Zip Code to only allow 5 digits
+document.getElementById('zipCode').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    e.target.value = value.substring(0, 5); // Only keep first 5 digits
+});
+
+// Email validation function
+function validateEmails() {
+    const email = document.getElementById('email');
+    const confirmEmail = document.getElementById('confirmEmail');
+    const emailValue = email.value.trim();
+    const confirmValue = confirmEmail.value.trim();
+
+    if (emailValue && confirmValue) {
+        if (emailValue !== confirmValue) {
+            confirmEmail.setCustomValidity('Email addresses must match');
+            return false;
+        } else {
+            confirmEmail.setCustomValidity('');
+            return true;
+        }
+    }
+    return true;
+}
+
+// Add email validation listeners
+document.getElementById('email').addEventListener('input', validateEmails);
+document.getElementById('confirmEmail').addEventListener('input', validateEmails);
+
+// Submit purchase form
+async function submitPurchase() {
+    const shippingForm = document.getElementById('shippingForm');
+    const paymentForm = document.getElementById('paymentForm');
+    const isPickup = document.getElementById('inPersonPickupCheckbox').checked;
+    
+    // Validate emails match
+    if (!validateEmails()) {
+        alert('Email addresses must match');
+        return;
+    }
+    
+    // Validate shipping form if not pickup
+    if(!isPickup && !shippingForm.checkValidity()) {
+        shippingForm.reportValidity();
+        return;
+    }
+    
+    // Always validate payment form
+    if(!paymentForm.checkValidity()) {
+        paymentForm.reportValidity();
+        return;
+    }
+    
+    try {
+        // Collect form data and submit
+        const formData = {
+            isPickup: isPickup,
+            shipping: isPickup ? null : {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                address1: document.getElementById('address1').value,
+                address2: document.getElementById('address2').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                zipCode: document.getElementById('zipCode').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value
+            },
+            payment: {
+                cardNumber: document.getElementById('cardNumber').value.replace(/\s/g, ''),
+                expirationDate: document.getElementById('expirationDate').value,
+                securityCode: document.getElementById('securityCode').value
+            }
+        };
+        
+        // TODO: Add API call to process purchase
+        console.log('Purchase data:', formData);
+        
+        // Close modal and show success message
+        const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
+        modal.hide();
+        alert('Purchase completed successfully!');
+        
+    } catch(error) {
+        console.error('Purchase failed:', error);
+        alert('Failed to complete purchase. Please try again.');
+    }
+}
