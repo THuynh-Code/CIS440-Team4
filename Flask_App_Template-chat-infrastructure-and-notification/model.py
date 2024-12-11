@@ -46,3 +46,26 @@ class Listing(db.Model):
             'status': self.status,
             'user_email': self.user.email if self.user else None
         }
+        
+class Message(db.Model):
+    __tablename__ = 'message'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    listing_id = db.Column(db.Integer, db.ForeignKey('listing.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    sender = db.relationship('User', foreign_keys=[sender_id])
+    listing = db.relationship('Listing', foreign_keys=[listing_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sender_id': self.sender_id,
+            'listing_id': self.listing_id,
+            'message': self.message,
+            'timestamp': self.timestamp.isoformat(),
+            'sender_email': self.sender.email
+        }

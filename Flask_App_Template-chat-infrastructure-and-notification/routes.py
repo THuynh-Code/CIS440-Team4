@@ -4,7 +4,7 @@ from flask import Blueprint, current_app, request, jsonify, render_template
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 from extensions import db
-from model import User, Listing  # Removed Chatroom from imports
+from model import User, Listing, Message  # Removed Chatroom from imports
 
 # Helper function to decode the JWT token and validate the user
 def validate_token(request):
@@ -303,3 +303,44 @@ def get_my_listings():  # Changed function name
     except Exception as e:
         print('Error getting user listings:', e)
         return jsonify({"error": "Failed to fetch listings"}), 500
+    
+@routes_blueprint.route('/api/messages/<int:listing_id>', methods=['GET'])
+def get_messages(listing_id):
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    listing = Listing.query.get(listing_id)
+    if not listing:
+        return jsonify({"error": "Listing not found"}), 404
+
+    # Only allow the seller and potential buyers to see messages
+    if listing.user_id != current_user.id and not Message.query.filter_by(
+        listing_id=listing_id, sender_id=current_user.id).first():
+        return jsonify({"error": "Unauthorized"}), 403
+
+    messages = Message.query.filter_by(listing_id=listing_id).order_by(Message.timestamp).all()
+    return jsonify([msg.to_dict() for msg in messages]), 200
+
+@routes_blueprint.route('/api/messages/<int:listing_id>', methods=['POST'])
+def create_message(listing_id):
+    current_user, error = validate_token(request)
+    if error:
+        return error
+
+    data = request.json
+    message_text = data.get('message')
+    
+    if not message_text:
+        return jsonify({"error": "Message cannot be empty"}), 400
+
+    new_message = Message(
+        sender_id=current_user.id,
+        listing_id=listing_id,
+        message=message_text
+    )
+    
+    db.session.add(new_message)
+    db.session.commit()
+    
+    return jsonify(new_message.to_dict()), 201

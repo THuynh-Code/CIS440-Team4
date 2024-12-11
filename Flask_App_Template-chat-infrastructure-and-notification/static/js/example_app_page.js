@@ -83,6 +83,20 @@ function setupFilters() {
     });
 }
 
+function handleLogout() {
+    // Clear the JWT token and admin status from localStorage
+    localStorage.removeItem('jwtToken');
+    localStorage.removeItem('admin');
+    
+    // Disconnect WebSocket if connected
+    if (ChatSocket.socket) {
+        ChatSocket.socket.disconnect();
+    }
+    
+    // Redirect to login page
+    window.location.href = '/';
+}
+
 // Form Handlers Setup
 function setupFormHandlers() {
     // New Listing Form
@@ -414,12 +428,9 @@ function showExpandedView(listing) {
         const messageButton = modalElement.querySelector('.btn-outline-primary');
         if (messageButton) {
             messageButton.onclick = function() {
-                console.log('Message button clicked');
-                const messagingSection = modalBody.querySelector('.messaging-section');
-                if (messagingSection) {
-                    messagingSection.style.display = 'block';
-                    ChatSocket.joinRoom(`listing_${listing.id}`);
-                }
+                const expandedModal = bootstrap.Modal.getInstance(modalElement);
+                expandedModal.hide();
+                openMessagingModal(listing);
             };
         }
 
@@ -444,6 +455,104 @@ function showExpandedView(listing) {
     } catch (error) {
         console.error('Error showing expanded view:', error);
     }
+}
+
+function openMessagingModal(listing) {
+    console.log('Opening messaging modal for listing:', listing);
+    DataModel.setSelectedListing(listing);
+    
+    // Clear previous messages
+    const messagesContainer = document.getElementById('messagesContainer');
+    messagesContainer.innerHTML = '';
+    
+    // Show modal
+    const messagingModal = new bootstrap.Modal(document.getElementById('messagingModal'));
+    messagingModal.show();
+    
+    // Join the chat room
+    ChatSocket.joinRoom(`listing_${listing.id}`);
+    
+    // Load existing messages
+    loadMessages(listing.id);
+}
+
+async function loadMessages(listingId) {
+    try {
+        const response = await fetch(`/api/messages/${listingId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load messages');
+        
+        const messages = await response.json();
+        const container = document.getElementById('messagesContainer');
+        container.innerHTML = ''; // Clear container
+        messages.forEach(msg => addMessageToUI(msg));
+    } catch (error) {
+        console.error('Error loading messages:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ... other existing code ...
+
+    // Setup message form handler
+    const messageForm = document.getElementById('messageForm');
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            const listing = DataModel.getCurrentListing();
+            
+            if (message && listing) {
+                console.log('Sending message:', message);
+                // Send via WebSocket
+                ChatSocket.socket.emit('message', {
+                    message: message,
+                    listing_id: listing.id,
+                    token: localStorage.getItem('jwtToken')
+                });
+                
+                // Add message to UI immediately
+                addMessageToUI({
+                    message: message,
+                    sender_id: parseInt(localStorage.getItem('userId')),
+                    sender_email: localStorage.getItem('userEmail'),
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Clear input
+                input.value = '';
+            }
+        });
+    }
+});
+
+function addMessageToUI(messageData) {
+    const container = document.getElementById('messagesContainer');
+    if (!container) return;
+
+    console.log('Adding message to UI:', messageData);
+    
+    const messageElement = document.createElement('div');
+    const isSentByMe = messageData.sender_id === parseInt(localStorage.getItem('userId'));
+    
+    messageElement.className = `message ${isSentByMe ? 'sent' : 'received'} mb-2`;
+    messageElement.innerHTML = `
+        <div class="message-content p-2 rounded ${isSentByMe ? 'bg-asu-maroon text-white' : 'bg-light'}">
+            <small class="d-block ${isSentByMe ? 'text-white-50' : 'text-muted'}">${messageData.sender_email}</small>
+            <div class="message-text">${messageData.message}</div>
+            <small class="${isSentByMe ? 'text-white-50' : 'text-muted'}">
+                ${formatTimeAgo(new Date(messageData.timestamp))}
+            </small>
+        </div>
+    `;
+    
+    container.appendChild(messageElement);
+    container.scrollTop = container.scrollHeight;
 }
 
 function sendMessage() {
@@ -553,98 +662,7 @@ function addGlowEffect(element) {
     }
 }
 
-// async function showYourListings() {
-//     // Hide filter elements
-//     const searchSection = document.querySelector('.search-section');
-//     const quickFilters = document.querySelector('.quick-filters');
-//     if (searchSection) searchSection.style.display = 'none';
-//     if (quickFilters) quickFilters.style.display = 'none';
-
-//     // Get the main container
-//     const container = document.querySelector('.container .row.g-4');
-//     if (!container) return;
-
-//     try {
-//         // Get user's listings
-//         const response = await fetch('/api/listings/user/me', {
-//             headers: {
-//                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-//             }
-//         });
-
-//         if (!response.ok) throw new Error('Failed to fetch your listings');
-//         const listings = await response.json();
-
-//         // Clear and add title
-//         container.innerHTML = `
-//             <div class="col-12 mb-4">
-//                 <div class="d-flex justify-content-between align-items-center">
-//                     <h2>Your Listings</h2>
-//                     <button class="btn btn-asu-gold" onclick="openNewListingModal()">
-//                         <i class="fas fa-plus me-1"></i> Create New Listing
-//                     </button>
-//                 </div>
-//             </div>
-//         `;
-
-//         // Display listings
-//         listings.forEach(listing => {
-//             const col = document.createElement('div');
-//             col.className = 'col-12 mb-4';
-//             col.innerHTML = `
-//                 <div class="card">
-//                     <div class="card-header d-flex justify-content-between align-items-center bg-asu-maroon text-white">
-//                         <h5 class="mb-0">${listing.title}</h5>
-//                         <span class="badge bg-asu-gold text-dark">${listing.status || 'Active'}</span>
-//                     </div>
-//                     <div class="card-body">
-//                         <div class="row">
-//                             <div class="col-md-4">
-//                                 <img src="${listing.image_url || defaultImage}" 
-//                                      class="img-fluid rounded" 
-//                                      alt="${listing.title}">
-//                                 <div class="mt-3">
-//                                     <p class="mb-2"><strong>Price:</strong> $${listing.price.toFixed(2)}</p>
-//                                     <p class="mb-2"><strong>Category:</strong> ${listing.category}</p>
-//                                     <p class="mb-2"><strong>Location:</strong> ${listing.campus}</p>
-//                                     <p class="mb-0"><strong>Listed:</strong> ${formatTimeAgo(new Date(listing.created_at))}</p>
-//                                 </div>
-//                             </div>
-//                             <div class="col-md-8">
-//                                 <h6>Description</h6>
-//                                 <p>${listing.description}</p>
-//                                 <div class="messages-section">
-//                                     <h6 class="mt-4">Messages</h6>
-//                                     <div class="messages-container border rounded p-3" style="height: 200px; overflow-y: auto;" id="messages-${listing.id}">
-//                                         <div class="text-center text-muted">No messages yet</div>
-//                                     </div>
-//                                 </div>
-//                             </div>
-//                         </div>
-//                     </div>
-//                     <div class="card-footer bg-light">
-//                         <button class="btn btn-danger" onclick="deleteListing(${listing.id})">
-//                             <i class="fas fa-trash me-1"></i> Delete Listing
-//                         </button>
-//                         <button class="btn btn-primary" onclick="editListing(${listing.id})">
-//                             <i class="fas fa-edit me-1"></i> Edit Listing
-//                         </button>
-//                     </div>
-//                 </div>
-//             `;
-            
-//             container.appendChild(col);
-//         });
-
-//     } catch (error) {
-//         console.error('Error loading your listings:', error);
-//         alert('Failed to load your listings. Please try again.');
-//     }
-// }
-
 // Update the showYourListings function to include status display
-
-
 async function showYourListings() {
     // Hide filter elements
     const searchSection = document.querySelector('.search-section');
@@ -706,18 +724,24 @@ async function showYourListings() {
                                     <p class="mb-0"><strong>Listed:</strong> ${formatTimeAgo(new Date(listing.created_at))}</p>
                                 </div>
                             </div>
+
                             <div class="col-md-8">
                                 <h6>Description</h6>
                                 <p>${listing.description}</p>
                                 <div class="messages-section">
                                     <h6 class="mt-4">Messages</h6>
                                     <div class="messages-container border rounded p-3" style="height: 200px; overflow-y: auto;" id="messages-${listing.id}">
-                                        <div class="text-center text-muted">No messages yet</div>
+                                        <!-- Messages will be loaded here -->
+                                    </div>
+                                    <div class="input-group mt-2">
+                                        <input type="text" class="form-control" id="reply-${listing.id}" placeholder="Type your reply...">
+                                        <button class="btn btn-asu-maroon" onclick="sendSellerReply(${listing.id})">Reply</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                                                    
                     <div class="card-footer bg-light">
                         ${listing.status !== 'purchased' ? `
                             <button class="btn btn-danger" onclick="deleteListing(${listing.id})">
@@ -732,6 +756,8 @@ async function showYourListings() {
             `;
             
             container.appendChild(col);
+            // Load messages for this listing
+            loadListingMessages(listing.id);
         });
 
     } catch (error) {
@@ -740,12 +766,14 @@ async function showYourListings() {
     }
 }
 
-async function loadListingMessages(listing_id) {
-    const messagesContainer = document.getElementById(`messages-${listing_id}`);
+
+
+async function loadListingMessages(listingId) {
+    const messagesContainer = document.getElementById(`messages-${listingId}`);
     if (!messagesContainer) return;
 
     try {
-        const response = await fetch(`/api/messages/${listing_id}`, {
+        const response = await fetch(`/api/messages/${listingId}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
             }
@@ -754,17 +782,21 @@ async function loadListingMessages(listing_id) {
         if (!response.ok) throw new Error('Failed to load messages');
         const messages = await response.json();
 
-        messagesContainer.innerHTML = messages.length ? '' : 
-            '<div class="text-center text-muted">No messages yet</div>';
+        if (messages.length === 0) {
+            messagesContainer.innerHTML = '<div class="text-center text-muted">No messages yet</div>';
+            return;
+        }
 
+        messagesContainer.innerHTML = '';
         messages.forEach(msg => {
+            const isSent = msg.sender_id === parseInt(localStorage.getItem('userId'));
             const messageEl = document.createElement('div');
-            messageEl.className = `message ${msg.is_sender ? 'sent' : 'received'} mb-2`;
+            messageEl.className = `message ${isSent ? 'sent' : 'received'} mb-2`;
             messageEl.innerHTML = `
-                <div class="message-content p-2 rounded">
-                    <small class="text-muted">${msg.sender_email}</small>
+                <div class="message-content p-2 rounded ${isSent ? 'bg-asu-maroon text-white' : 'bg-light'}">
+                    <small class="${isSent ? 'text-white-50' : 'text-muted'}">${msg.sender_email}</small>
                     <div class="message-text">${msg.message}</div>
-                    <small class="text-muted">${formatTimeAgo(new Date(msg.timestamp))}</small>
+                    <small class="${isSent ? 'text-white-50' : 'text-muted'}">${formatTimeAgo(new Date(msg.timestamp))}</small>
                 </div>
             `;
             messagesContainer.appendChild(messageEl);
@@ -784,7 +816,14 @@ function sendSellerReply(listingId) {
     const message = input.value.trim();
     
     if (message) {
-        ChatSocket.sendMessage(message, listingId);
+        // Send via WebSocket
+        ChatSocket.socket.emit('message', {
+            message: message,
+            listing_id: listingId,
+            token: localStorage.getItem('jwtToken')
+        });
+        
+        // Clear input
         input.value = '';
     }
 }
@@ -892,66 +931,6 @@ function validateEmails() {
 // Add email validation listeners
 document.getElementById('email').addEventListener('input', validateEmails);
 document.getElementById('confirmEmail').addEventListener('input', validateEmails);
-
-// Submit purchase form
-// async function submitPurchase() {
-//     const shippingForm = document.getElementById('shippingForm');
-//     const paymentForm = document.getElementById('paymentForm');
-//     const isPickup = document.getElementById('inPersonPickupCheckbox').checked;
-    
-//     // Validate emails match
-//     if (!validateEmails()) {
-//         alert('Email addresses must match');
-//         return;
-//     }
-    
-//     // Validate shipping form if not pickup
-//     if(!isPickup && !shippingForm.checkValidity()) {
-//         shippingForm.reportValidity();
-//         return;
-//     }
-    
-//     // Always validate payment form
-//     if(!paymentForm.checkValidity()) {
-//         paymentForm.reportValidity();
-//         return;
-//     }
-    
-//     try {
-//         // Collect form data and submit
-//         const formData = {
-//             isPickup: isPickup,
-//             shipping: isPickup ? null : {
-//                 firstName: document.getElementById('firstName').value,
-//                 lastName: document.getElementById('lastName').value,
-//                 address1: document.getElementById('address1').value,
-//                 address2: document.getElementById('address2').value,
-//                 city: document.getElementById('city').value,
-//                 state: document.getElementById('state').value,
-//                 zipCode: document.getElementById('zipCode').value,
-//                 email: document.getElementById('email').value,
-//                 phone: document.getElementById('phone').value
-//             },
-//             payment: {
-//                 cardNumber: document.getElementById('cardNumber').value.replace(/\s/g, ''),
-//                 expirationDate: document.getElementById('expirationDate').value,
-//                 securityCode: document.getElementById('securityCode').value
-//             }
-//         };
-        
-//         // TODO: Add API call to process purchase
-//         console.log('Purchase data:', formData);
-        
-//         // Close modal and show success message
-//         const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
-//         modal.hide();
-//         alert('Purchase completed successfully!');
-        
-//     } catch(error) {
-//         console.error('Purchase failed:', error);
-//         alert('Failed to complete purchase. Please try again.');
-//     }
-// }
 
 async function submitPurchase() {
     const shippingForm = document.getElementById('shippingForm');

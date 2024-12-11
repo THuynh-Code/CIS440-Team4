@@ -31,9 +31,6 @@
                             <i class="fas fa-box me-1"></i> Your Listings
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-heart me-1"></i> Saved</a>
-                    </li>
                 </ul>
                 <div class="d-flex gap-2">
                     <button class="btn btn-asu-gold" onclick="openNewListingModal()">
@@ -44,10 +41,8 @@
                             <i class="fas fa-user-circle me-1"></i> Account
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            <li><a href="#" class="dropdown-item text-danger" onclick="handleLogout()">Logout</a></li>
                         </ul>
                     </div>
                 </div>
@@ -181,6 +176,26 @@
                     <button type="submit" form="newListingForm" class="btn btn-asu-maroon">
                         <i class="fas fa-plus me-1"></i> Create Listing
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="messagingModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-asu-maroon text-white">
+                    <h5 class="modal-title">Message Seller</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="messagesContainer" class="messages-container mb-3" style="height: 300px; overflow-y: auto;">
+                        <!-- Messages will appear here -->
+                    </div>
+                    <form id="messageForm" class="input-group">
+                        <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                        <button class="btn btn-asu-maroon" type="submit">Send</button>
+                    </form>
                 </div>
             </div>
         </div>
