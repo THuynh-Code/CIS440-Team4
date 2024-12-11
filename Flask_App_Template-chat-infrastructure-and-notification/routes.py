@@ -222,25 +222,39 @@ def create_listing():
 
 @routes_blueprint.route('/api/listings/<int:listing_id>', methods=['DELETE'])
 def delete_listing(listing_id):
-    current_user, error = validate_token(request)
-    if error:
-        return error
-
-    listing = Listing.query.get(listing_id)
-    if not listing:
-        return jsonify({"error": "Listing not found"}), 404
-
-    # Check if the current user owns the listing or is an admin
-    if listing.user_id != current_user.id and not current_user.admin:
-        return jsonify({"error": "Unauthorized to delete this listing"}), 403
-
     try:
-        db.session.delete(listing)
-        db.session.commit()
-        return jsonify({"message": "Listing deleted successfully"}), 200
+        current_user, error = validate_token(request)
+        if error:
+            print("Token validation error")
+            return error
+
+        print(f"User {current_user.email} attempting to delete listing {listing_id}")
+
+        listing = Listing.query.get(listing_id)
+        if not listing:
+            print(f"Listing {listing_id} not found")
+            return jsonify({"error": "Listing not found"}), 404
+
+        # Check if the current user owns the listing or is an admin
+        if listing.user_id != current_user.id and not current_user.admin:
+            print(f"Unauthorized deletion attempt by user {current_user.email}")
+            return jsonify({"error": "Unauthorized to delete this listing"}), 403
+
+        # First, delete any associated messages
+        try:
+            Message.query.filter_by(listing_id=listing_id).delete()
+            db.session.delete(listing)
+            db.session.commit()
+            print(f"Successfully deleted listing {listing_id} and its messages")
+            return jsonify({"message": "Listing deleted successfully"}), 200
+        except Exception as db_error:
+            db.session.rollback()
+            print(f"Database error: {str(db_error)}")
+            return jsonify({"error": str(db_error)}), 500
+
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        print(f"Server error in delete_listing: {str(e)}")
+        return jsonify({"error": "Server error occurred"}), 500
 
 @routes_blueprint.route('/api/listings/<int:listing_id>', methods=['PUT'])
 def update_listing(listing_id):

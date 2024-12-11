@@ -7,11 +7,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Connect WebSocket if user is authenticated
     if (localStorage.getItem('jwtToken')) {
+        console.log('Initializing ChatSocket...');
         ChatSocket.connect();
-        ChatSocket.setMessageCallback(handleMessage);
+        
+        ChatSocket.setMessageCallback(function(data) {
+            console.log('Received message in callback:', data);
+            addMessageToUI(data);
+        });
+
+        ChatSocket.socket.on('connect', () => {
+            console.log('WebSocket connected successfully');
+        });
+
+        ChatSocket.socket.on('connect_error', (error) => {
+            console.error('WebSocket connection error:', error);
+        });
     }
 
-    // Check admin status and setup UI accordingly
+    // Check admin status and setup UI
     const adminStatus = localStorage.getItem('admin') === 'true';
     DataModel.admin = adminStatus;
     
@@ -38,8 +51,136 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup Form Handlers
     setupFormHandlers();
 
-    // Load initial listings
+    // Initial load of listings
     loadListings();
+
+    // Payment Form Input Formatting
+    const cardNumberInput = document.getElementById('cardNumber');
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            let formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+            formattedValue = formattedValue.substring(0, 19);
+            e.target.value = formattedValue;
+        });
+    }
+
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            let formattedValue = '';
+            
+            if(value.length > 0) {
+                formattedValue = value.substring(0, 3);
+                if(value.length > 3) {
+                    formattedValue += '-' + value.substring(3, 6);
+                }
+                if(value.length > 6) {
+                    formattedValue += '-' + value.substring(6, 10);
+                }
+            }
+            
+            e.target.value = formattedValue;
+        });
+    }
+
+    const expirationDateInput = document.getElementById('expirationDate');
+    if (expirationDateInput) {
+        expirationDateInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            if (value.length >= 2) {
+                let month = value.substring(0, 2);
+                if (parseInt(month) > 12) {
+                    month = '12';
+                }
+                if (parseInt(month) === 0) {
+                    month = '01';
+                }
+                
+                value = month + (value.length > 2 ? '/' + value.substring(2, 4) : '');
+            }
+            
+            e.target.value = value;
+        });
+    }
+
+    const securityCodeInput = document.getElementById('securityCode');
+    if (securityCodeInput) {
+        securityCodeInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            e.target.value = value.substring(0, 3);
+        });
+    }
+
+    const zipCodeInput = document.getElementById('zipCode');
+    if (zipCodeInput) {
+        zipCodeInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            e.target.value = value.substring(0, 5);
+        });
+    }
+
+    // Email validation setup
+    const emailInput = document.getElementById('email');
+    const confirmEmailInput = document.getElementById('confirmEmail');
+    if (emailInput && confirmEmailInput) {
+        emailInput.addEventListener('input', validateEmails);
+        confirmEmailInput.addEventListener('input', validateEmails);
+    }
+
+    // Setup message form handler
+    const messageForm = document.getElementById('messageForm');
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            const listing = DataModel.getCurrentListing();
+            
+            if (message && listing) {
+                console.log('Sending message:', message);
+                ChatSocket.socket.emit('message', {
+                    message: message,
+                    listing_id: listing.id,
+                    token: localStorage.getItem('jwtToken')
+                });
+                
+                // Add message to UI immediately
+                addMessageToUI({
+                    message: message,
+                    sender_id: parseInt(localStorage.getItem('userId')),
+                    sender_email: localStorage.getItem('userEmail'),
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Clear input
+                input.value = '';
+            }
+        });
+    }
+
+    // Setup WebSocket message listener
+    if (ChatSocket.socket) {
+        ChatSocket.socket.on('new_message', function(data) {
+            const messagesContainer = document.getElementById(`messages-${data.listing_id}`);
+            if (messagesContainer) {
+                const isSent = data.sender_id === parseInt(localStorage.getItem('userId'));
+                const messageEl = document.createElement('div');
+                messageEl.className = `message ${isSent ? 'sent' : 'received'} mb-2`;
+                messageEl.innerHTML = `
+                    <div class="message-content p-2 rounded ${isSent ? 'bg-asu-maroon text-white' : 'bg-light'}">
+                        <small class="${isSent ? 'text-white-50' : 'text-muted'}">${data.sender_email}</small>
+                        <div class="message-text">${data.message}</div>
+                        <small class="${isSent ? 'text-white-50' : 'text-muted'}">just now</small>
+                    </div>
+                `;
+                messagesContainer.appendChild(messageEl);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        });
+    }
 });
 
 // Filter Setup and Handling
@@ -277,27 +418,28 @@ async function deleteListing(listingId) {
         const response = await fetch(`/api/listings/${listingId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+                'Content-Type': 'application/json'
             }
         });
 
         console.log('Response status:', response.status);
+        
+        // Parse the response even if it's an error
+        const data = await response.json().catch(e => ({ error: 'Failed to parse response' }));
+        console.log('Response data:', data);
 
         if (!response.ok) {
-            throw new Error('Failed to delete listing');
+            throw new Error(data.error || 'Failed to delete listing');
         }
 
-        // Remove the listing card from the DOM
-        const listingCard = document.querySelector(`button[onclick="deleteListing(${listingId})"]`).closest('.col-12');
-        if (listingCard) {
-            listingCard.remove();
-        }
-
+        // If successful, reload the listings
+        await showYourListings();
         alert('Listing deleted successfully!');
 
     } catch (error) {
-        console.error('Error deleting listing:', error);
-        alert('Failed to delete listing: ' + error.message);
+        console.error('Full error details:', error);
+        alert(error.message || 'Failed to delete listing');
     }
 }
 
@@ -724,7 +866,6 @@ async function showYourListings() {
                                     <p class="mb-0"><strong>Listed:</strong> ${formatTimeAgo(new Date(listing.created_at))}</p>
                                 </div>
                             </div>
-
                             <div class="col-md-8">
                                 <h6>Description</h6>
                                 <p>${listing.description}</p>
@@ -741,7 +882,6 @@ async function showYourListings() {
                             </div>
                         </div>
                     </div>
-                                                    
                     <div class="card-footer bg-light">
                         ${listing.status !== 'purchased' ? `
                             <button class="btn btn-danger" onclick="deleteListing(${listing.id})">
@@ -756,8 +896,12 @@ async function showYourListings() {
             `;
             
             container.appendChild(col);
+            
             // Load messages for this listing
             loadListingMessages(listing.id);
+
+            // Join the WebSocket room for this listing
+            ChatSocket.joinRoom(`listing_${listing.id}`);
         });
 
     } catch (error) {
@@ -920,17 +1064,16 @@ function showBrowse() {
     loadListings();
 }
 
-// Format credit card number while typing
+// Format credit card number
 document.getElementById('cardNumber').addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-    let formattedValue = '';
+    // Remove any non-digits
+    let value = e.target.value.replace(/\D/g, '');
     
-    for(let i = 0; i < value.length && i < 16; i++) {
-        if(i > 0 && i % 4 === 0) {
-            formattedValue += ' ';
-        }
-        formattedValue += value[i];
-    }
+    // Add space after every 4 digits
+    let formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+    
+    // Limit to 16 digits plus spaces
+    formattedValue = formattedValue.substring(0, 19);
     
     e.target.value = formattedValue;
 });
@@ -953,19 +1096,37 @@ document.getElementById('phone').addEventListener('input', function(e) {
     e.target.value = formattedValue;
 });
 
-// Format expiration date while typing
+// Format expiration date
 document.getElementById('expirationDate').addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-    let formattedValue = '';
+    // Remove any non-digits
+    let value = e.target.value.replace(/\D/g, '');
     
-    if(value.length > 0) {
-        formattedValue = value.substring(0, 2);
-        if(value.length > 2) {
-            formattedValue += '/' + value.substring(2, 4);
+    // Format as MM/YY
+    if (value.length >= 2) {
+        // Get month and limit it to 01-12
+        let month = value.substring(0, 2);
+        if (parseInt(month) > 12) {
+            month = '12';
         }
+        if (parseInt(month) === 0) {
+            month = '01';
+        }
+        
+        // Add slash and year
+        value = month + (value.length > 2 ? '/' + value.substring(2, 4) : '');
     }
     
-    e.target.value = formattedValue;
+    e.target.value = value;
+});
+
+
+// Format security code
+document.getElementById('securityCode').addEventListener('input', function(e) {
+    // Remove any non-digits
+    let value = e.target.value.replace(/\D/g, '');
+    
+    // Limit to 3 digits
+    e.target.value = value.substring(0, 3);
 });
 
 // Format Zip Code to only allow 5 digits
@@ -997,6 +1158,7 @@ function validateEmails() {
 document.getElementById('email').addEventListener('input', validateEmails);
 document.getElementById('confirmEmail').addEventListener('input', validateEmails);
 
+// Submit purchase form
 async function submitPurchase() {
     const shippingForm = document.getElementById('shippingForm');
     const paymentForm = document.getElementById('paymentForm');
@@ -1021,15 +1183,13 @@ async function submitPurchase() {
     }
     
     try {
-        const currentListing = DataModel.getCurrentListing();
-        if (!currentListing) {
-            throw new Error('No listing selected');
-        }
-
+        // Get the current listing being purchased
+        const listing = DataModel.getCurrentListing();
+        
         // Collect form data
         const formData = {
+            listingId: listing.id,
             isPickup: isPickup,
-            listingId: currentListing.id,
             shipping: isPickup ? null : {
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
@@ -1047,27 +1207,76 @@ async function submitPurchase() {
                 securityCode: document.getElementById('securityCode').value
             }
         };
-
+        
         // Update listing status to purchased
-        await DataModel.updateListing(currentListing.id, {
-            ...currentListing,
-            status: 'purchased'
+        const response = await fetch(`/api/listings/${listing.id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: 'purchased'
+            })
+        });
+ 
+        if (!response.ok) {
+            throw new Error('Failed to update listing status');
+        }
+        
+        // Clear all form fields
+        if (paymentForm) paymentForm.reset();
+        if (shippingForm) shippingForm.reset();
+        
+        // Clear any saved autocomplete data
+        const formInputs = document.querySelectorAll('#purchaseModal input');
+        formInputs.forEach(input => {
+            input.value = '';
+            input.setAttribute('autocomplete', 'off');
         });
         
-        // TODO: Add API call to process payment
-        console.log('Purchase data:', formData);
+        // Reset shipping checkbox
+        if (isPickup) {
+            document.getElementById('inPersonPickupCheckbox').checked = false;
+            document.getElementById('collapseShipping').classList.add('show');
+            document.querySelector('#headingShipping button').disabled = false;
+        }
         
         // Close modal and show success message
         const modal = bootstrap.Modal.getInstance(document.getElementById('purchaseModal'));
         modal.hide();
-        
-        // Refresh the listings display
-        await loadListings();
-        
         alert('Purchase completed successfully!');
+        
+        // Reload listings to reflect the updated status
+        await loadListings();
         
     } catch(error) {
         console.error('Purchase failed:', error);
         alert('Failed to complete purchase. Please try again.');
     }
+ }
+
+function renderListings(listings) {
+    const listingGrid = document.querySelector('.row.g-4');
+    listingGrid.innerHTML = ''; // Clear existing listings
+    listings.forEach(listing => {
+        const card = `
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card listing-card h-100">
+                <img src="${listing.image_url || '../static/images/placeholder.jpg'}" class="card-img-top listing-img" alt="Product">
+                <div class="card-body">
+                    <h5 class="card-title text-truncate">${listing.title}</h5>
+                    <p class="card-text price-text">$${listing.price}</p>
+                    <p class="card-text description-text text-muted">${listing.description}</p>
+                    <div class="location-badge">
+                        <i class="fas fa-map-marker-alt"></i> ${listing.campus} Campus
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">Posted ${new Date(listing.created_at).toLocaleDateString()}</small>
+                </div>
+            </div>
+        </div>`;
+        listingGrid.insertAdjacentHTML('beforeend', card);
+    });
 }

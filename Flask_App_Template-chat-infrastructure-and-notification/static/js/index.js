@@ -143,6 +143,38 @@ function handleRegistration(email, password, description = "", attempt = 1) {
     });
 }
 
+document.getElementById("newListingForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const title = document.getElementById("title").value;
+    const price = document.getElementById("price").value;
+    const category = document.getElementById("category").value;
+    const campus = document.getElementById("campus").value;
+    const description = document.getElementById("description").value;
+    const imageUrl = document.getElementById("imageUrl").value;
+
+    fetch('/api/listings/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+        },
+        body: JSON.stringify({ title, price, category, campus, description, image_url: imageUrl })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error('Error:', data.error);
+        } else {
+            alert('Listing created successfully!');
+            // Reload or dynamically update the listing grid
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+
+
 // EXAMPLE: Function to show a bootstrap modal
 //          Note: this function would be called from an event listener
 //                (e.g., a button click event) defined above when the 
